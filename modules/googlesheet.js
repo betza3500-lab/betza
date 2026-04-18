@@ -1,4 +1,21 @@
-export { load, getDeelnemers, getPronos, getWedstrijden, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions};
+export {
+  load,
+  getDeelnemers,
+  getPronos,
+  getWedstrijden,
+  getResults,
+  getTotals,
+  getGrafiekData,
+  getAllDeelnemers,
+  getEditions,
+  getCached,
+  rowsToObjects,
+  whoIsWinner,
+  calculateScore,
+  calculateScoreFinale,
+  calculateScoreSchiftingsvraag,
+  parseCommaSeparated
+};
 
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import NodeCache from 'node-cache';

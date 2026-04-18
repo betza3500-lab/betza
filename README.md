@@ -134,7 +134,8 @@ The frontend will be available at `http://localhost:5173` and API calls to `/api
 
 #### Backend Scripts
 - `npm start`: Start the production server
-- `npm test`: Run tests (currently no tests configured)
+- `npm test`: Run backend unit tests
+- `npm run test:coverage`: Run backend unit tests with coverage output
 
 #### Frontend Scripts
 - `npm run dev`: Start development server with hot reload
