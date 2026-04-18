@@ -2,12 +2,11 @@
 
 import { ref } from 'vue'
 
-import logo_toernooi from '../assets/logo_toernooi.svg'
 import voorzitter from '../assets/voorzitter.jpeg'
 import omkoping from '../assets/omkoping.jpeg'
 import money from '../assets/money.jpeg'
 
-const logo_toernooi_ref = ref(logo_toernooi)
+const logo_toernooi_ref = ref('https://assets.football-logos.cc/logos/tournaments/fifa-world-cup-2026.23c4ca19.svg')
 const money_ref = ref(voorzitter)
 const omkoping_ref = ref(omkoping)
 const money2_ref = ref(money)
