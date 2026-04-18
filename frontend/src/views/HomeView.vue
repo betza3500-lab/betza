@@ -2,7 +2,7 @@
 
 import { ref } from 'vue'
 
-import logo_toernooi from '../assets/logo_toernooi.svg'
+import logo_toernooi from '../assets/logo.svg'
 import voorzitter from '../assets/voorzitter.jpeg'
 import omkoping from '../assets/omkoping.jpeg'
 import money from '../assets/money.jpeg'
