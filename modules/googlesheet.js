@@ -3,153 +3,138 @@ export { load, getDeelnemers, getPronos, getWedstrijden, getResults, getTotals, 
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import NodeCache from 'node-cache';
 
-const SCHIFTINGSVRAAG = "Schiftingsvraag";
+// Constants
+const SHEET_NAMES = {
+  PRONO: 'prono',
+  DEELNEMERS: 'deelnemers',
+  WEDSTRIJDEN: 'wedstrijden'
+};
+
+const CACHE_KEYS = {
+  DOC: 'doc',
+  DEELNEMERS: 'deelnemers',
+  ALL_DEELNEMERS: 'alldeelnemers',
+  EDITIONS: 'editions',
+  WEDSTRIJDEN: 'wedstrijden',
+  PRONOS: 'pronos'
+};
+
+const SCHIFTINGSVRAAG = 'Schiftingsvraag';
+const SCORE_REGEX = /^\d+-\d+$/;
+const ROUND_REGEXES = {
+  VOORRONDES: /^M\d+/,
+  ACHTSTE: /^AF\d+/,
+  KWART: /^KF\d+/,
+  HALVE: /(^HF\d+|^F2)/,
+  FINALE: /^F1/
+};
+
 const myCache = new NodeCache({
   stdTTL: 60,
   checkperiod: 120
 });
 
-const scoreRegex = new RegExp('[0-9]+-[0-9]+');
+/**
+ * Wrapper for cached async operations
+ */
+async function getCached(cacheKey, fetchFn) {
+  if (myCache.has(cacheKey)) {
+    return myCache.get(cacheKey);
+  }
+  const data = await fetchFn();
+  myCache.set(cacheKey, data);
+  return data;
+}
+
+/**
+ * Convert sheet rows to array of objects with proper property names
+ */
+function rowsToObjects(rows, headers, trimValues = false) {
+  return rows.map(row => {
+    const item = {};
+    headers.forEach(h => {
+      const val = row[h];
+      item[h] = trimValues && val !== undefined ? val.trim() : val;
+    });
+    return item;
+  });
+}
 
 async function load() {
-  let doc = myCache.get("doc");
-  if (doc == undefined) {
+  return getCached(CACHE_KEYS.DOC, async () => {
     console.log('Fetching data from ' + process.env.GOOGLE_SPREADSHEET);
-    doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET);
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
     });
-    await doc.loadInfo()
-    myCache.set('doc', doc ); 
-  } else {
-    //console.log('Using doc cache');
-  }
-  return doc;
+    await doc.loadInfo();
+    return doc;
+  });
 }
 
 async function getDeelnemers() {
-  if (myCache.has("deelnemers")) {
-    return myCache.get("deelnemers");
-  } else {
-    console.log('Fetching deelnemers '); 
+  return getCached(CACHE_KEYS.DEELNEMERS, async () => {
+    console.log('Fetching deelnemers');
     const doc = await load();
-    const sheet = doc.sheetsByTitle["prono"];
+    const sheet = doc.sheetsByTitle[SHEET_NAMES.PRONO];
     await sheet.getRows();
-    const deelnemers = sheet.headerValues.slice(1);
-    
-    let data =[];
+    const deelnemerNames = sheet.headerValues.slice(1);
     const allDeelnemers = await getAllDeelnemers();
-    for(const deelnemer of deelnemers) {
-      const item = allDeelnemers.find(d => d.naam == deelnemer);
-      data.push(item);
-    }
-    myCache.set('deelnemers', data );
-    return data;
-  } 
+    return deelnemerNames.map(name => allDeelnemers.find(d => d.naam === name));
+  });
 }
 
 async function getAllDeelnemers() {
-  if (myCache.has("alldeelnemers")) {
-    return myCache.get("alldeelnemers");
-  } else {
-    console.log('Fetching deelnemers sheet'); 
+  return getCached(CACHE_KEYS.ALL_DEELNEMERS, async () => {
+    console.log('Fetching all deelnemers sheet');
     const doc = await load();
-    const sheet = doc.sheetsByTitle["deelnemers"];
+    const sheet = doc.sheetsByTitle[SHEET_NAMES.DEELNEMERS];
     const rows = await sheet.getRows();
-    const headers = sheet.headerValues;
-    const data = [];
-    rows.forEach(e => {
-      var item={};
-      headers.forEach(h => {
-        item[h] = e[h];
-      })
-      data.push(item);
-    });
-    myCache.set('alldeelnemers', data ); 
-    return data;
-  } 
+    return rowsToObjects(rows, sheet.headerValues);
+  });
 }
 
 async function getEditions() {
-  if (myCache.has("editions")) {
-    return myCache.get("editions");
-  } else {
-    console.log('Fetching deelnemers sheet'); 
+  return getCached(CACHE_KEYS.EDITIONS, async () => {
+    console.log('Fetching editions');
     const doc = await load();
-    const sheet = doc.sheetsByTitle["deelnemers"];
-    const rows = await sheet.getRows();
-    const editions = sheet.headerValues.slice(3);
-    myCache.set('editions', editions ); 
-    return editions;
-  } 
+    const sheet = doc.sheetsByTitle[SHEET_NAMES.DEELNEMERS];
+    await sheet.getRows();
+    return sheet.headerValues.slice(3);
+  });
 }
 
 async function getWedstrijden() {
-  if (myCache.has("wedstrijden")) {
-    //console.log('Using wedstrijden sheet cache');
-    return myCache.get("wedstrijden");
-  } else {
+  return getCached(CACHE_KEYS.WEDSTRIJDEN, async () => {
     console.log('Fetching wedstrijden sheet');
     const doc = await load();
-    const sheet = doc.sheetsByTitle["wedstrijden"];
+    const sheet = doc.sheetsByTitle[SHEET_NAMES.WEDSTRIJDEN];
     const rows = await sheet.getRows();
-    const headers = sheet.headerValues;
-    const data = [];
-    rows.forEach(e => {
-      var item={};
-      headers.forEach(h => {
-        let val = e[h] != undefined ? e[h].trim() : e[h];
-        item[h] = val;
-      })
-      data.push(item);
-    });
-    myCache.set("wedstrijden", data ); 
-    return data;
-  } 
+    return rowsToObjects(rows, sheet.headerValues, true);
+  });
 }
-
 
 async function getPronos() {
-
-  if (myCache.has("pronos")) {
-    //console.log('Using pronos sheet cache');
-    return myCache.get("pronos");
-  } else {
+  return getCached(CACHE_KEYS.PRONOS, async () => {
     console.log('Fetching pronos sheet');
     const doc = await load();
-    const sheet = doc.sheetsByTitle["prono"];
+    const sheet = doc.sheetsByTitle[SHEET_NAMES.PRONO];
     const rows = await sheet.getRows();
-    const headers = sheet.headerValues;
-    const data = [];
-    rows.forEach(e => {
-      var item={};
-      
-      headers.forEach(h => {
-        let val = e[h] != undefined ? e[h].trim() : e[h];
-        item[h] = val;
-      })
-      data.push(item);
-    });
-    if (myCache.set("pronos", data )) { 
-      return data;
-    }; 
-  } 
+    return rowsToObjects(rows, sheet.headerValues, true);
+  });
 }
 
 
 
-function whoIsWinner(score){
-  let result;
-  let points = score.split("-");
-  if (parseInt(points[0]) > parseInt(points[1])) {
-    result="home";
-  } else if (parseInt(points[0])==parseInt(points[1])) {
-    result="draw";
-  } else if (parseInt(points[0]) < parseInt(points[1])) {
-    result="out";
-  }
-  return result;
+/**
+ * Determine winner from score string (e.g. "3-1")
+ */
+function whoIsWinner(score) {
+  const [home, away] = score.split('-').map(Number);
+  if (home > away) return 'home';
+  if (home < away) return 'away';
+  return 'draw';
 }
 
 function calculateScore(matchResult, matchProno, isBelgium, isJoker) {
@@ -244,300 +229,238 @@ async function calculateScoreSchiftingsvraag(prono, result) {
   return 0;
 }
 
+/**
+ * Parse comma-separated values from a string
+ */
+function parseCommaSeparated(str) {
+  return str ? str.split(',').map(s => s.trim()) : [];
+}
+
 async function getPronoResultsForGame(id, score, isBelgium) {
   const pronos = await getPronos();
-  const jokers = pronos.find(e => e.id == "Jokers");
-  const bribes = pronos.find(e => e.id == "Bribes");
-  const pronoGame = pronos.find(e => e.id == id);
-  if(pronoGame) {
-    let data = [];
-    (Object.keys(pronoGame).slice(1)).forEach(k => {
-      let item={};
-      item.deelnemer = k;
-      item.prono = pronoGame[k];
-      let isJoker = false;
-      if (jokers[k] && jokers[k].includes(',')) {
-        isJoker = jokers[k].split(',').map(e => e.trim()).includes(id);
-      }
-      item.joker = isJoker;
-      let isBribe = false;
-      if (bribes[k] && bribes[k] != "") {
-          isBribe = bribes[k].split(',').map(e => e.trim()).includes(id);
-      }
-      item.bribe = isBribe;
-      item.belgium = isBelgium;
-      //Let op, indien je een score aanpast van een wedstrijd waar je bonuspunten voor kan binnenhalen (= wedstrijd met joker of wedstrijd van de Belgen), dan vervallen na aanpassing de bonuspunten. Je kan voor deze match dan enkel nog de reguliere punten binnen halen.
-      if(isBribe) {
-        item.resultaat = calculateScore(score, pronoGame[k], false, false);  
-      } else {
-        item.resultaat = calculateScore(score, pronoGame[k], isBelgium, isJoker);
-      }
-      data.push(item);
-    });
-    return data;
-  }
+  const jokers = pronos.find(e => e.id === 'Jokers') || {};
+  const bribes = pronos.find(e => e.id === 'Bribes') || {};
+  const pronoGame = pronos.find(e => e.id === id);
+  
+  if (!pronoGame) return [];
+
+  return Object.keys(pronoGame).slice(1).map(deelnemer => {
+    const jokerIds = parseCommaSeparated(jokers[deelnemer]);
+    const briefIds = parseCommaSeparated(bribes[deelnemer]);
+    const isJoker = jokerIds.includes(id);
+    const isBribe = briefIds.includes(id);
+
+    return {
+      deelnemer,
+      prono: pronoGame[deelnemer],
+      joker: isJoker,
+      bribe: isBribe,
+      belgium: isBelgium,
+      resultaat: isBribe
+        ? calculateScore(score, pronoGame[deelnemer], false, false)
+        : calculateScore(score, pronoGame[deelnemer], isBelgium, isJoker)
+    };
+  });
 }
 
 async function getPronoResultsForFinales(id, finalisten) {
   const pronos = await getPronos();
-  const pronoFinale = pronos.find(e => e.id == id);
-  if(pronoFinale) {
-    let data = [];
-    (Object.keys(pronoFinale).slice(1)).forEach(k => {
-      let item={};
-      item.deelnemer = k;
-      if(pronoFinale[k]) {
-        if (pronoFinale[k].includes(",")) {
-	        item.prono = pronoFinale[k].split(",").map(e => e.trim());
-        } else {
-	        item.prono = [ pronoFinale[k].trim() ];
-	      }
-      } else {
-        item.prono = [];
-      }
-      item.resultaat = calculateScoreFinale(id, finalisten, item.prono);
-      data.push(item);
-    });
-    return data;
-  }
-}
+  const pronoFinale = pronos.find(e => e.id === id);
+  
+  if (!pronoFinale) return [];
 
+  return Object.keys(pronoFinale).slice(1).map(deelnemer => ({
+    deelnemer,
+    prono: parseCommaSeparated(pronoFinale[deelnemer]),
+    resultaat: calculateScoreFinale(id, finalisten, parseCommaSeparated(pronoFinale[deelnemer]))
+  }));
+}
 
 async function getPronoResultsForSchiftingsvraag(result) {
   const pronos = await getPronos();
-  const prono = pronos.find(e => e.id == SCHIFTINGSVRAAG);
-  if(prono) {
-    let data = [];
-    (Object.keys(prono).slice(1)).forEach(k => {
-      let item={};
-      item.deelnemer = k;
-      if(prono[k]) {
-        item.prono = prono[k].trim();
-      }
-      item.resultaat = 0;
-      data.push(item);
-    });
-    return data;
-  }
+  const prono = pronos.find(e => e.id === SCHIFTINGSVRAAG);
+  
+  if (!prono) return [];
+
+  return Object.keys(prono).slice(1).map(deelnemer => ({
+    deelnemer,
+    prono: prono[deelnemer]?.trim() || '',
+    resultaat: 0
+  }));
 }
 
 async function getFinaleResults(finale) {
-  
-  var game= {};
-  game.id= finale;
-  let winnaar = await getWinnaar();
-  let finalisten;
-  if (finale == "Winnaar") {
-    game.result =  winnaar;
-  } else if (finale == "België") {
-    if(winnaar.find(e => e === "België")) {
-      game.result = ['Winnaar'];
-    } else if (winnaar.length > 0) {
-      game.result = await getResultBelgium();
-    } else  {
-      game.result = [];
-    }
+  const winnaar = await getWinnaar();
+  let result;
+
+  if (finale === 'Winnaar') {
+    result = winnaar;
+  } else if (finale === 'België') {
+    result = winnaar.includes('België') 
+      ? ['Winnaar'] 
+      : (winnaar.length > 0 ? await getResultBelgium() : []);
   } else {
-    game.result= await getFinalisten(finale);
+    result = await getFinalisten(finale);
   }
-  game.pronoResults= await getPronoResultsForFinales(finale, game.result);
-  return game;
+
+  return {
+    id: finale,
+    result,
+    pronoResults: await getPronoResultsForFinales(finale, result)
+  };
 }
 
 async function getSchiftingsvraagResults() {
-  
-  var game= {};
-  game.id= SCHIFTINGSVRAAG;
-  game.result= await getSchiftingsvraagUitslag();
-  game.pronoResults= await getPronoResultsForSchiftingsvraag(game.result);
-  return game;
+  const result = await getSchiftingsvraagUitslag();
+  return {
+    id: SCHIFTINGSVRAAG,
+    result,
+    pronoResults: await getPronoResultsForSchiftingsvraag(result)
+  };
 }
 
 async function getResults() {
   const wedstrijden = await getWedstrijden();
-  var results= [];
-  let voorrondes = await wedstrijden.filter(e=> e.id.startsWith("M"));
-  for (const e of voorrondes) {
-    var game= {};
-    game.id= e.id
-    game.poule= e.poule
-    game.date=e.datum
-    game.time=e.tijd
-    game.stadium=e.stadion
-    game.home=e.thuis;
-    game.out=e.uit;
-    game.result=e.uitslag;
-    let isBelgium = (e.thuis == "België" || e.uit == "België") ? true : false;
-    let pronoResult = await getPronoResultsForGame(e.id, e.uitslag, isBelgium);
-    game.pronoResults= pronoResult;
-    results.push(game);
-  }
+  const voorrondes = wedstrijden.filter(e => e.id.startsWith('M'));
+
+  const results = [];
   
-  results.push(await getFinaleResults('AF'));
-  results.push(await getFinaleResults('KF'));
-  results.push(await getFinaleResults('HF'));
-  results.push(await getFinaleResults('F1'));
-  results.push(await getFinaleResults('Winnaar'));
-  results.push(await getFinaleResults('België'));
+  for (const match of voorrondes) {
+    const isBelgium = match.thuis === 'België' || match.uit === 'België';
+    results.push({
+      id: match.id,
+      poule: match.poule,
+      date: match.datum,
+      time: match.tijd,
+      stadium: match.stadion,
+      home: match.thuis,
+      away: match.uit,
+      result: match.uitslag,
+      pronoResults: await getPronoResultsForGame(match.id, match.uitslag, isBelgium)
+    });
+  }
+
+  // Add finale results
+  for (const finale of ['AF', 'KF', 'HF', 'F1', 'Winnaar', 'België']) {
+    results.push(await getFinaleResults(finale));
+  }
   results.push(await getSchiftingsvraagResults());
+
   return results;
 }
 
 async function getTotals() {
   const results = await getResults();
   const deelnemers = await getDeelnemers();
-  let data=[];
-  for (const deelnemer of deelnemers) {
-    let total = 0;
-    let item = {};
-    item.deelnemer = deelnemer.naam;
-    item.pictureID = deelnemer.PictureID;
-    for (const result of results) {
-      const score = result.pronoResults.find(e => e.deelnemer == deelnemer.naam);
-      if (score != undefined) {
-        total = total + score.resultaat;
-      }
-    }
-    item.total = total;
-    data.push(item);
-  }
- 
-  let sortedData = data.sort((a,b) => b.total - a.total);
-  // Add ranking numbers with ties
-  let rankedEntries = [];
-  let currentRank = 1;
-  sortedData.forEach((item, index) => {
-      if (index > 0 && item.total < sortedData[index - 1].total) {
-          currentRank += 1;
-      }
-      rankedEntries.push({ deelnemer: item.deelnemer, pictureID: item.pictureID, total: item.total, rank: currentRank });
+
+  // Calculate totals for each participant
+  const totals = deelnemers.map(deelnemer => {
+    const total = results.reduce((sum, result) => {
+      const score = result.pronoResults?.find(s => s.deelnemer === deelnemer.naam);
+      return sum + (score?.resultaat || 0);
+    }, 0);
+
+    return {
+      deelnemer: deelnemer.naam,
+      pictureID: deelnemer.PictureID,
+      total
+    };
   });
-  return rankedEntries;
+
+  // Sort and add ranking
+  const sorted = totals.sort((a, b) => b.total - a.total);
+  let rank = 1;
+
+  return sorted.map((item, index) => {
+    if (index > 0 && item.total < sorted[index - 1].total) {
+      rank = index + 1;
+    }
+    return { ...item, rank };
+  });
 }
 
 async function getGrafiekData() {
   const results = await getResults();
   const deelnemers = await getDeelnemers();
+  const labels = results.map(r => r.id);
 
-  var datasets = [];
-  var labels = [];
+  const datasets = deelnemers.map(deelnemer => {
+    let total = 0;
+    const scores = [];
 
-  for (const result of results) {
-    labels.push(result.id);
-  }
-/*
-{
-  "label": "10",
-  "data": [
-   0,
-   0,
-   0,
-   0,
-   0,
-   0
-  ],
-  "backgroundColor": "#1f943f",
-  "borderColor": "#1f943f",
-  "total": 0,
-  "fill": false,
-  "cubicInterpolationMode": "monotone",
-  "tension": 0.4
- },
- */
-
-
-  for (const deelnemer of deelnemers) {
-    var item= {};
-    item.label=deelnemer.naam;
-    var scores = [];
-    var total=0;
-    // Er moeten opeenvolgende matchresultaten zijn, anders worden de resultaten niet opgenomen in de grafiek. Bij de finales gelden 
-    for (const result of results){
-      if(scoreRegex.test(result.result) || (result.result != undefined && result.result.length > 0 ) ) {
-        console.log("Result:", result.id)
-        const score = result.pronoResults.find(e => e.deelnemer == deelnemer.naam);
-        total = total + score.resultaat;
+    for (const result of results) {
+      if (SCORE_REGEX.test(result.result) || (result.result && result.result.length > 0)) {
+        const score = result.pronoResults?.find(s => s.deelnemer === deelnemer.naam);
+        total += score?.resultaat || 0;
         scores.push(total);
-      } else { break;}     
+      } else {
+        break;
+      }
     }
-    item.data=(scores);
-    item.backgroundColor=deelnemer.kleur;
-    item.borderColor=deelnemer.kleur;
-    item.total=total;
-    item.fill=false
-    item.cubicInterpolationMode="monotone";
-    item.tension=0.4;
-    datasets.push(item);
-  }
 
-  var chartData={};
-  chartData.labels = labels;
-  chartData.datasets = datasets;
+    return {
+      label: deelnemer.naam,
+      data: scores,
+      backgroundColor: deelnemer.kleur,
+      borderColor: deelnemer.kleur,
+      total,
+      fill: false,
+      cubicInterpolationMode: 'monotone',
+      tension: 0.4
+    };
+  });
 
-  return chartData;
+  return { labels, datasets };
 }
 
+async function getFinalisten(id) {
+  const wedstrijden = await getWedstrijden();
+  const finalisten = [];
 
-async function getFinalisten(id){
-  var data=[];
-  (await getWedstrijden())
-      .filter(e => (e.id.startsWith(id) && e.thuis != undefined && e.uit != undefined))
-      .forEach(e => {
-        data.push(e.thuis);
-        data.push(e.uit);
-      });
-  return data;
+  wedstrijden
+    .filter(e => e.id.startsWith(id) && e.thuis && e.uit)
+    .forEach(e => {
+      finalisten.push(e.thuis, e.uit);
+    });
+
+  return finalisten;
 }
 
-async function getSchiftingsvraagUitslag(){
-  var data=[];
-  (await getWedstrijden())
-      .filter(e => (e.id.startsWith(SCHIFTINGSVRAAG)))
-      .forEach(e => {
-        data.push(e.uitslag);
-      });
-  return data;
+async function getSchiftingsvraagUitslag() {
+  const wedstrijden = await getWedstrijden();
+  return wedstrijden
+    .filter(e => e.id.startsWith(SCHIFTINGSVRAAG))
+    .map(e => e.uitslag);
 }
 
 async function getWinnaar() {
-  let game = (await getWedstrijden()).find(e => e.id.startsWith("F1"));
-  var result=[];
-  if (scoreRegex.test(game.uitslag)) {
-      let uitslag = game.uitslag.split('-'); 
-      if (parseInt(uitslag[0]) > parseInt(uitslag[1])) {
-        result.push(game.thuis);
-      } else if(parseInt(uitslag[0]) < parseInt(uitslag[1])) {
-        result.push(game.uit);
-      } else {
-        result.push('Fout: gelijke stand, iemand moet winnaar zijn');
-      }
-    } 
-    return result;
-}
+  const wedstrijden = await getWedstrijden();
+  const game = wedstrijden.find(e => e.id.startsWith('F1'));
 
+  if (!game || !SCORE_REGEX.test(game.uitslag)) {
+    return [];
+  }
+
+  const [home, away] = game.uitslag.split('-').map(Number);
+  if (home > away) return [game.thuis];
+  if (away > home) return [game.uit];
+  return ['Fout: gelijke stand, iemand moet winnaar zijn'];
+}
 
 async function getResultBelgium() {
   const wedstrijden = await getWedstrijden();
-  let matchesBelgium = wedstrijden.filter(e => (e.thuis === "België" || e.uit === "België"));
-  let result=[];
-  let lastMatchBelgium = (matchesBelgium[matchesBelgium.length-1]).id;
+  const matchesBelgium = wedstrijden.filter(e => e.thuis === 'België' || e.uit === 'België');
 
-  const voorrondesRegex = new RegExp('M[0-9]+');
-  const achtsteRegex = new RegExp('AF[0-9]+');
-  const kwartRegex = new RegExp('KF[0-9]+');
-  const halveRegex = new RegExp('(HF[0-9]+|F2)');
-  const finaleRegex = new RegExp('F1');
+  if (matchesBelgium.length === 0) return [];
 
-  if(voorrondesRegex.test(lastMatchBelgium)) {
-    result.push('voorrondes');
-  } else if (achtsteRegex.test(lastMatchBelgium)){
-    result.push('AF');
-  } else if (kwartRegex.test(lastMatchBelgium)){
-    result.push('KF');
-  } else if (halveRegex.test(lastMatchBelgium)) {
-    result.push('HF');
-  } else if (finaleRegex.test(lastMatchBelgium)){
-    result.push('F1');
-  }
-  return result;
+  const lastMatchId = matchesBelgium[matchesBelgium.length - 1].id;
+
+  // Check which round Belgium reached
+  if (ROUND_REGEXES.VOORRONDES.test(lastMatchId)) return ['voorrondes'];
+  if (ROUND_REGEXES.ACHTSTE.test(lastMatchId)) return ['AF'];
+  if (ROUND_REGEXES.KWART.test(lastMatchId)) return ['KF'];
+  if (ROUND_REGEXES.HALVE.test(lastMatchId)) return ['HF'];
+  if (ROUND_REGEXES.FINALE.test(lastMatchId)) return ['F1'];
+
+  return [];
 }

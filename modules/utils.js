@@ -1,29 +1,31 @@
-export { pickHighest, pickLowest};
+export { pickHighest, pickLowest };
 
+/**
+ * Get top N highest values from an object
+ */
 const pickHighest = (obj, num = 1) => {
-  const requiredObj = {};
-  if(num > Object.keys(obj).length){
-     return false;
-  };
-  Object.keys(obj).sort((a, b) => obj[b] - obj[a]).forEach((key, ind) =>
-  {
-     if(ind < num){
-        requiredObj[key] = obj[key];
-     }
-  });
-  return requiredObj;
+  if (num > Object.keys(obj).length) return false;
+  
+  return Object.entries(obj)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, num)
+    .reduce((result, [key, val]) => {
+      result[key] = val;
+      return result;
+    }, {});
 };
 
+/**
+ * Get top N lowest values from an object
+ */
 const pickLowest = (obj, num = 1) => {
-  const requiredObj = {};
-  if(num > Object.keys(obj).length){
-     return false;
-  };
-  Object.keys(obj).sort((a, b) => obj[a] - obj[b]).forEach((key, ind) =>
-  {
-     if(ind < num){
-        requiredObj[key] = obj[key];
-     }
-  });
-  return requiredObj;
+  if (num > Object.keys(obj).length) return false;
+  
+  return Object.entries(obj)
+    .sort(([, a], [, b]) => a - b)
+    .slice(0, num)
+    .reduce((result, [key, val]) => {
+      result[key] = val;
+      return result;
+    }, {});
 };
