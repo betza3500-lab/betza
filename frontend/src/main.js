@@ -1,13 +1,13 @@
 import { createApp } from 'vue'
-import BootstrapVue3 from 'bootstrap-vue-3'
+import { createBootstrap } from 'bootstrap-vue-next'
 import App from './App.vue'
 import router from './router'
 import VueLoading from 'vue-loading-overlay';
-import 'vue-loading-overlay/dist/vue-loading.css';
+import 'vue-loading-overlay/dist/css/index.css';
 
 
 import 'bootstrap/dist/css/bootstrap.css'
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
+import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
 
 
 import './assets/main.css'
@@ -15,7 +15,7 @@ import './assets/main.css'
 const app = createApp(App)
 
 app.use(router)
-app.use(BootstrapVue3)
+app.use(createBootstrap())
 app.use(VueLoading, {
   // props
   color: "#00bd7e"
