@@ -1,0 +1,27 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "@mdi/js": "^7.0.96",
+    "@popperjs/core": "^2.11.6",
+    "bootstrap": "^5.2.1",
+    "bootstrap-vue-3": "^0.3.3",
+    "chart.js": "^3.9.1",
+    "vue": "^3.2.38",
+    "vue-chartjs": "^4.1.1",
+    "vue-loading-overlay": "^5.0.3",
+    "vue-router": "^4.1.5",
+    "vue-spinners": "^1.0.2",
+    "vue3-icon": "^2.1.0",
+    "vue3-loading-screen": "^1.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^3.0.3",
+    "vite": "^3.0.9"
+  }
+}

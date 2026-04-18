@@ -1,0 +1,380 @@
+{ "labels": [
+  "m01",
+  "m02",
+  "m03",
+  "m04",
+  "m05",
+  "m06",
+  "m07",
+  "m08",
+  "m09",
+  "m10",
+  "m11",
+  "m12",
+  "m13",
+  "m14",
+  "m15",
+  "m16",
+  "m17",
+  "m18",
+  "m19",
+  "m20",
+  "m21",
+  "m22",
+  "m23",
+  "m24",
+  "m25",
+  "m26",
+  "m27",
+  "m28",
+  "m29",
+  "m30",
+  "m31",
+  "m32",
+  "m33",
+  "m34",
+  "m35",
+  "m36",
+  "AF1",
+  "AF2",
+  "AF3",
+  "AF4",
+  "AF5",
+  "AF6",
+  "AF7",
+  "AF8",
+  "KF1",
+  "KF2",
+  "KF3",
+  "KF4",
+  "HF1",
+  "HF2",
+  "F",
+  "W"
+ ],
+"datasets": [
+ {
+  "label": "10",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#1f943f",
+  "borderColor": "#1f943f",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "11",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#34a1ae",
+  "borderColor": "#34a1ae",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "12",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#540263",
+  "borderColor": "#540263",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "13",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#b190fc",
+  "borderColor": "#b190fc",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "14",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#c7c601",
+  "borderColor": "#c7c601",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "15",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#0badf2",
+  "borderColor": "#0badf2",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "16",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#518281",
+  "borderColor": "#518281",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "17",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#683d42",
+  "borderColor": "#683d42",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "18",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#d264d7",
+  "borderColor": "#d264d7",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "19",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#d6873c",
+  "borderColor": "#d6873c",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "3",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#7ec521",
+  "borderColor": "#7ec521",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "4",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#cc001a",
+  "borderColor": "#cc001a",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "5",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#b0ddbf",
+  "borderColor": "#b0ddbf",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "6",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#05838c",
+  "borderColor": "#05838c",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "7",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#cdc409",
+  "borderColor": "#cdc409",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "8",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#eb6067",
+  "borderColor": "#eb6067",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "9",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#fd3fef",
+  "borderColor": "#fd3fef",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "JR",
+  "data": [
+   0,
+   3,
+   4,
+   4,
+   8,
+   8
+  ],
+  "backgroundColor": "#b11a2d",
+  "borderColor": "#b11a2d",
+  "total": 8,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ },
+ {
+  "label": "KrUIF",
+  "data": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "backgroundColor": "#3421a1",
+  "borderColor": "#3421a1",
+  "total": 0,
+  "fill": false,
+  "cubicInterpolationMode": "monotone",
+  "tension": 0.4
+ }
+]
+}
