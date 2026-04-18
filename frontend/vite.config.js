@@ -6,8 +6,8 @@ import vue from '@vitejs/plugin-vue'
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const apiUrl = mode === 'production' 
-    ? 'http://betza-api.onrender.com'
-    : 'http://localhost:5000'
+    ? 'http://betza-api.onrender.com/api'
+    : 'http://localhost:5000/api'
   
   return {
     server: {
