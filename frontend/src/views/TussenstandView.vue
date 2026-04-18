@@ -5,8 +5,13 @@ export default {
   name: 'App',
   components: { ParticipantAvatar },
   data: () => ({
-    ranking: {}
+    ranking: []
   }),
+  computed: {
+    sortedRanking() {
+      return [...this.ranking].sort((a, b) => b.total - a.total);
+    }
+  },
   async mounted() {
     let loader = this.$loading.show({
       // Optional parameters
@@ -39,54 +44,113 @@ export default {
   
 <template>
   <div id="rankings" class="container">
-    <div class="row">
-      <div class="col"></div>
-      <div class="col-12 col-md-6">
-        <div class="container">
-          <div v-for="item in ranking" :key="item.deelnemer" class="row rank-item mb-2">
-            <div class="col-1 d-flex align-items-center">
-              <span class="ranking p-0">{{ item.rank }}.</span>
-            </div>
-            <div class="col-2 d-flex align-items-center">
-              <ParticipantAvatar class="p-0" :pictureId="item.pictureID" />
-            </div>
-            <div class="col-7 d-flex align-items-center">
-              <span class="participant">{{ item.deelnemer }}</span>
-            </div>
-            <div class="col-2 d-flex align-items-center">
-              <b-badge class="total ">{{ item.total }}</b-badge>
-            </div>
-          </div>
+    <div class="rank-list">
+      <div v-for="item in sortedRanking" :key="item.deelnemer" class="rank-item mb-2">
+        <div class="rank-number">
+          <span class="ranking">{{ item.rank }}.</span>
+        </div>
+        <div class="rank-avatar">
+          <ParticipantAvatar :pictureId="item.pictureID" />
+        </div>
+        <div class="rank-name">
+          <span class="participant">{{ item.deelnemer }}</span>
+        </div>
+        <div class="rank-score">
+          <b-badge class="total">{{ item.total }}</b-badge>
         </div>
       </div>
-      <div class="col"></div>
     </div>
-    
   </div>
 </template>
 
-<style >
+<style>
 .total {
   color: var(--vt-c-black) !important;
   font-size: larger;
   background-color: var(--betza-light) !important;
 }
+
 #rankings {
-  min-width: 350px;
+  min-width: 320px;
+}
+
+.rank-list {
+  width: 100%;
 }
 
 .rank-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--betza-light);
-  padding-bottom: 0px;
+  padding: 0.75rem 0;
+}
+
+.rank-number,
+.rank-avatar,
+.rank-score {
+  flex: 0 0 auto;
+}
+
+.rank-name {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.rank-number,
+.rank-avatar,
+.rank-score {
+  flex: 0 0 auto;
+}
+
+.rank-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rank-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ranking {
-  font-size: xx-large;
+  font-size: 1.5rem;
   color: var(--betza-light);
+  display: inline-block;
+  min-width: 2rem;
+  text-align: right;
 }
 
 .participant {
-  font-size: xx-large;
+  font-size: 1.25rem;
   color: var(--vt-c-white);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-score {
+  min-width: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (max-width: 576px) {
+  .rank-item {
+    gap: 0.5rem;
+  }
+
+  .ranking {
+    font-size: 1.25rem;
+  }
+
+  .participant {
+    font-size: 1rem;
+  }
 }
 </style>
