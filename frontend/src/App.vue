@@ -1,9 +1,11 @@
 <script setup>
+import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 
 import SvgIcon from 'vue3-icon';
 import { mdiTableLarge, mdiFormatListNumbered, mdiChartLine, mdiFootball   } from '@mdi/js'
 
+const navVisible = ref(false)
 
 </script>
 
@@ -21,7 +23,7 @@ import { mdiTableLarge, mdiFormatListNumbered, mdiChartLine, mdiFootball   } fro
     <b-link active-class="active" class="nav-link" to="/tussenstand"><svg-icon class="menu-icon" type="mdi" :path="mdiFormatListNumbered" :size="30"></svg-icon></b-link>
     </div>
     <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
-    <b-collapse id="nav-collapse" is-nav>
+    <b-collapse id="nav-collapse" v-model="navVisible" is-nav>
       <b-navbar-nav>   
         <!-- <b-link active-class="active" class="nav-link prono" target="_blank" href="https://forms.gle/5Be7stkJmnizxYsT9"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Geef pronostiek</span></b-link> -->
         <b-link active-class="active" class="nav-link" to="/resultaat"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Resultaat</span></b-link>
