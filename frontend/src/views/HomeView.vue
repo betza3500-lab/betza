@@ -49,7 +49,7 @@ q {
     <div class="row">
       <div class="col d-none d-lg-block"></div>
       <div class="col-12 col-lg-9">
-        <h1>Betza EK - 2024</h1>
+        <h1>Betza WK - 2026</h1>
         <div class="d-grid gap-2 col-12 align-content-start">
         <!--  <b-button class="btn-prono btn-block" target="_blank" href="world_cup_2022.xlsx" :size="lg">
             Excel voor pronostiek voorbereiding</b-button> -->
@@ -68,7 +68,7 @@ q {
         <p></p>
         
         <div class="d-grid gap-2 col-12 align-content-start">
-        <b-button class="btn-prono btn-block" target="_blank" href="https://www.wallchart.io/football/euro-cup-2024.html" :size="lg">
+        <b-button class="btn-prono btn-block" target="_blank" href="https://www.wallchart.io/football/world-cup-2026.html" :size="lg">
             Website voor pronostiek voorbereiding</b-button>
         </div>
         -->
