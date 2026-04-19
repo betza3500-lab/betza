@@ -9,7 +9,7 @@
  *
  * @requires dotenv - Environment variable management
  * @requires express - Web framework
- * @requires cors - Cross-origin resource sharing
+ * @requires cors - Cross-origin resource sharing (localhost only)
  * @requires google-spreadsheet - Google Sheets integration
  *
  * Environment Variables:
@@ -32,9 +32,9 @@
  * - GET /api/lowestChartData - Get bottom 3 performers
  *
  * CORS Configuration:
- * Only allows requests from whitelisted origins:
- * - http://localhost:5173 (development)
- * - https://betza.onrender.com (production)
+ * Enabled for localhost origins only (development). In production the
+ * BFF pattern serves frontend and API from the same origin, so CORS
+ * headers are not required.
  *
  * Usage:
  * npm start - Start the server
@@ -108,17 +108,18 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// https://expressjs.com/en/resources/middleware/cors.html#configuration-options
-var allowlist = ['http://localhost:5173', 'https://betza.onrender.com']
-var corsOptionsDelegate = function (req, callback) {
-  var corsOptions;
-  if (allowlist.indexOf(req.header('Origin')) !== -1) {
-    corsOptions = { origin: true } // reflect (enable) the requested origin in the CORS response
-  } else {
-    corsOptions = { origin: false } // disable CORS for this request
+// Enable CORS for localhost origins only (development).
+// In production the BFF pattern serves frontend and API from the same
+// origin, so CORS headers are not required.
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
   }
-  callback(null, corsOptions) // callback expects two parameters: error and options
-}
+}));
 
 
 async function calculatePronos(id) {
@@ -135,40 +136,40 @@ async function calculatePronos(id) {
 
 }
 
-// Serve static files from the React app
+// Serve static files from the frontend build
 app.use(express.static(path.join('./frontend/dist')));
 
-app.get('/api/participants', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/participants', async (req, res) => {
   return res.json(await getDeelnemers());
 });
 
-app.get('/api/alltimeparticipants', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/alltimeparticipants', async (req, res) => {
   return res.json(await getAllDeelnemers());
 });
 
-app.get('/api/editions', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/editions', async (req, res) => {
   return res.json(await getEditions());
 });
 
-app.get('/api/scores', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/scores', async (req, res) => {
 
   res.json(await getGrafiekData());
 
 });
 
-app.get('/api/chartData', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/chartData', async (req, res) => {
 
   res.json(await getGrafiekData());
 
 });
 
 
-app.get('/api/totals', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/totals', async (req, res) => {
   res.json(await getTotals());
 
 });
 
-app.get('/api/topChartData', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/topChartData', async (req, res) => {
 
   await load();
   
@@ -188,7 +189,7 @@ app.get('/api/topChartData', cors(corsOptionsDelegate), async (req, res) => {
 
 });
 
-app.get('/api/lowestChartData', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/lowestChartData', async (req, res) => {
 
   await load();
   
@@ -209,28 +210,32 @@ app.get('/api/lowestChartData', cors(corsOptionsDelegate), async (req, res) => {
 
 
 
-app.get('/api/games', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/games', async (req, res) => {
   return res.json(await getWedstrijden());
 });
 
 
-app.get('/api/results', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/results', async (req, res) => {
 
   return res.json(await getResults());
 
 });
 
-app.get('/api/prono', cors(corsOptionsDelegate), async (req, res) => {
+app.get('/api/prono', async (req, res) => {
   return res.json(await getPronos());
 });
 
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back frontend index.html file.
-//app.get('*', (req, res) => {
-////  console.log(req.originalUrl);
-////  res.sendFile(path.join(__dirname, './frontend/dist/index.html'));
-////});
+// Return 404 for any /api/* request that wasn't matched above.
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// SPA catchall: for any non-API request that doesn't match a static
+// file, send back the frontend index.html so the Vue router handles it.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, './frontend/dist/index.html'));
+});
 
 const port = process.env.PORT || 5000;
 const server = app.listen(port, () => {
