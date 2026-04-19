@@ -123,17 +123,30 @@ const apiRateLimitWindowMs = getPositiveIntEnv('API_RATE_LIMIT_WINDOW_MS', 60_00
 const apiRateLimitMaxRequests = getPositiveIntEnv('API_RATE_LIMIT_MAX_REQUESTS', 120);
 const apiRateLimitBuckets = new Map();
 
+function getRateLimitKey(req) {
+  const forwardedForHeader = req.headers['x-forwarded-for'];
+  const firstForwardedIp = Array.isArray(forwardedForHeader)
+    ? forwardedForHeader[0]
+    : forwardedForHeader?.split(',')[0]?.trim();
+
+  return (
+    req.ip ||
+    req.socket?.remoteAddress ||
+    firstForwardedIp ||
+    `anonymous:${req.get('user-agent') || 'unknown'}`
+  );
+}
+
 function apiRateLimiter(req, res, next) {
   const now = Date.now();
-  const key = req.ip || req.socket?.remoteAddress || 'unknown';
+  const key = getRateLimitKey(req);
   let bucket = apiRateLimitBuckets.get(key);
 
   if (!bucket || now >= bucket.resetAt) {
-    bucket = { count: 1, resetAt: now + apiRateLimitWindowMs };
+    bucket = { count: 0, resetAt: now + apiRateLimitWindowMs };
     apiRateLimitBuckets.set(key, bucket);
-  } else {
-    bucket.count += 1;
   }
+  bucket.count += 1;
 
   const remaining = Math.max(apiRateLimitMaxRequests - bucket.count, 0);
   res.setHeader('X-RateLimit-Limit', String(apiRateLimitMaxRequests));
@@ -305,4 +318,3 @@ server.on('error', (error) => {
   console.error(error);
   process.exit(1);
 });
-
