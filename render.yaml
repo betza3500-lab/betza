@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: betza
+    env: node
+    # Single build step: install root deps, then build the Vue frontend
+    buildCommand: npm run render-build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Google Sheets credentials – set these in the Render dashboard
+      - key: GOOGLE_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_SPREADSHEET
+        sync: false

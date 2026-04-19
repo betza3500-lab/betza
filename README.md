@@ -159,29 +159,74 @@ The backend provides the following REST API endpoints:
 ## CORS Configuration
 
 The API is configured to allow requests from:
-- `http://192.168.10.30:5173` (development)
-- `https://betza.onrender.com` (production)
+- `http://localhost:5173` (Vite dev server)
+- `http://192.168.10.30:5173` (LAN development access)
+- `https://betza.onrender.com` (production BFF – kept for the migration window)
+
+In production, the frontend is served by the same Express process as the API
+(single origin), so browser requests are same-origin and CORS headers are not
+required.  The middleware is retained only for the local dev scenario where Vite
+and the API run on different ports.
 
 ## Deployment
 
-### Backend Deployment (Render)
+### Architecture: Backend-for-Frontend (BFF) Single Service
 
-The backend is configured for deployment on Render:
+Betza uses a **BFF pattern** where one Express service handles everything:
 
-1. Connect your GitHub repository to Render
-2. Set environment variables in Render dashboard
-3. Deploy
+- Serves the compiled Vue.js app as static files from `frontend/dist`
+- Exposes all `/api/*` endpoints from the same origin
+- Returns `index.html` for any non-API route, enabling Vue Router's HTML5
+  history mode to work on direct navigation and browser refresh
 
-### Frontend Deployment
+This eliminates the need for a separate frontend hosting service and removes
+the cross-origin API dependency.
 
-For production frontend deployment:
-
-```bash
-cd frontend
-npm run build
+```
+Browser ──► https://betza.onrender.com/
+              │
+              │  /                  → frontend/dist/index.html  (Vue SPA)
+              │  /tussenstand       → frontend/dist/index.html  (SPA fallback)
+              │  /api/totals        → Express handler           (API)
+              └  /health            → Express handler           (health check)
 ```
 
-Deploy the `dist` folder to your hosting provider
+### Deploy to Render
+
+The repository includes a `render.yaml` for zero-configuration Render deployment.
+
+1. **Connect your repository** in the [Render dashboard](https://dashboard.render.com/)
+2. Render will detect `render.yaml` and create a **Web Service** automatically
+3. **Set secret environment variables** in the Render dashboard (these are
+   marked `sync: false` in `render.yaml` and must be provided manually):
+   - `GOOGLE_PRIVATE_KEY`
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+   - `GOOGLE_SPREADSHEET`
+4. **Deploy** – Render runs `npm run render-build` (installs deps + Vite build)
+   then starts with `npm start`
+
+#### Manual Render setup (without render.yaml)
+
+| Setting | Value |
+|---------|-------|
+| Environment | Node |
+| Build Command | `npm run render-build` |
+| Start Command | `npm start` |
+| Root Directory | *(leave empty – repo root)* |
+
+### Deploy to Heroku
+
+The `heroku-postbuild` hook in `package.json` builds the frontend automatically
+during `git push heroku main`.  No extra steps are required beyond setting the
+same environment variables listed above.
+
+### Health Check
+
+A `/health` endpoint is available for platform health probes:
+
+```
+GET /health  →  { "status": "ok", "timestamp": "2026-04-19T07:00:00.000Z" }
+```
 
 ## Troubleshooting
 
@@ -197,31 +242,37 @@ Deploy the `dist` folder to your hosting provider
 3. **Environment variables not loading**:
    - Ensure `.env` file is in the root directory
    - Restart the development server after adding variables
+   - On startup the server logs a `WARNING` for any missing required variables
 
-4. **CORS errors**:
-   - Check that your frontend is running on an allowed origin
-   - For development, use `http://localhost:5173`
+4. **CORS errors in development**:
+   - Make sure the Vite dev server is running on `http://localhost:5173`
+   - The API server must also be running on `http://localhost:5000`
 
 5. **Port conflicts**:
-   - Backend runs on port 5000 by default
-   - Frontend runs on port 5173 by default
-   - Change ports using environment variables if needed
+   - Backend runs on port 5000 by default (override with `PORT` env var)
+   - Vite dev server runs on port 5173 by default
+
+6. **Direct navigation returns 404 in production**:
+   - Ensure you are running the Express server – the SPA fallback (`app.get('*')`)
+     returns `index.html` for all non-API, non-asset routes
 
 ### Development Tips
 
-- Use `npm run dev -- --host` to expose the frontend on your network
-- The backend includes detailed JSDoc documentation in `api.js`
+- Run backend with `npm start` and frontend with `cd frontend && npm run dev` in
+  separate terminals
+- Use `npm run dev -- --host` to expose the Vite dev server on your local network
+- The backend includes JSDoc documentation in `api.js`
 - Check browser console and server logs for debugging
 - Use tools like Postman to test API endpoints directly
 
 ## Hosting
 
-Currently hosted on Render for the backend API.
+Hosted on [Render](https://render.com) as a single BFF service.
 
 ## Libraries
 
 - **node-google-spreadsheet**: https://theoephraim.github.io/node-google-spreadsheet/#/
-- **Express.js**: Web framework for the API
+- **Express.js**: Web framework for the BFF server
 - **Vue.js**: Frontend framework
 - **Vite**: Build tool and development server
 - **Bootstrap**: UI components
