@@ -1,6 +1,8 @@
 export { load, getDeelnemers, getPronos, getWedstrijden, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions};
 
+import 'dotenv/config';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT } from 'google-auth-library';
 import NodeCache from 'node-cache';
 
 const SCHIFTINGSVRAAG = "Schiftingsvraag";
@@ -11,16 +13,47 @@ const myCache = new NodeCache({
 
 const scoreRegex = new RegExp('[0-9]+-[0-9]+');
 
+function normalizeCellValue(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+function mapSheetRow(row, headers) {
+  const item = {};
+
+  headers.forEach((header) => {
+    item[header] = normalizeCellValue(row.get(header));
+  });
+
+  return item;
+}
+
+function getRequiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+function getServiceAccountAuth() {
+  const email = getRequiredEnv('GOOGLE_SERVICE_ACCOUNT_EMAIL');
+  const key = getRequiredEnv('GOOGLE_PRIVATE_KEY').replace(/\\n/g, '\n');
+
+  return new JWT({
+    email,
+    key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+}
+
 async function load() {
   let doc = myCache.get("doc");
   if (doc == undefined) {
-    console.log('Fetching data from ' + process.env.GOOGLE_SPREADSHEET);
-    doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    });
+    const spreadsheetId = getRequiredEnv('GOOGLE_SPREADSHEET');
+    console.log('Fetching data from ' + spreadsheetId);
+    doc = new GoogleSpreadsheet(spreadsheetId, getServiceAccountAuth());
     await doc.loadInfo()
+    console.log("Loaded document: " + doc.title);
     myCache.set('doc', doc ); 
   } else {
     //console.log('Using doc cache');
@@ -37,7 +70,6 @@ async function getDeelnemers() {
     const sheet = doc.sheetsByTitle["prono"];
     await sheet.getRows();
     const deelnemers = sheet.headerValues.slice(1);
-    
     let data =[];
     const allDeelnemers = await getAllDeelnemers();
     for(const deelnemer of deelnemers) {
@@ -58,14 +90,7 @@ async function getAllDeelnemers() {
     const sheet = doc.sheetsByTitle["deelnemers"];
     const rows = await sheet.getRows();
     const headers = sheet.headerValues;
-    const data = [];
-    rows.forEach(e => {
-      var item={};
-      headers.forEach(h => {
-        item[h] = e[h];
-      })
-      data.push(item);
-    });
+    const data = rows.map((row) => mapSheetRow(row, headers));
     myCache.set('alldeelnemers', data ); 
     return data;
   } 
@@ -95,15 +120,7 @@ async function getWedstrijden() {
     const sheet = doc.sheetsByTitle["wedstrijden"];
     const rows = await sheet.getRows();
     const headers = sheet.headerValues;
-    const data = [];
-    rows.forEach(e => {
-      var item={};
-      headers.forEach(h => {
-        let val = e[h] != undefined ? e[h].trim() : e[h];
-        item[h] = val;
-      })
-      data.push(item);
-    });
+    const data = rows.map((row) => mapSheetRow(row, headers));
     myCache.set("wedstrijden", data ); 
     return data;
   } 
@@ -121,16 +138,7 @@ async function getPronos() {
     const sheet = doc.sheetsByTitle["prono"];
     const rows = await sheet.getRows();
     const headers = sheet.headerValues;
-    const data = [];
-    rows.forEach(e => {
-      var item={};
-      
-      headers.forEach(h => {
-        let val = e[h] != undefined ? e[h].trim() : e[h];
-        item[h] = val;
-      })
-      data.push(item);
-    });
+    const data = rows.map((row) => mapSheetRow(row, headers));
     if (myCache.set("pronos", data )) { 
       return data;
     }; 

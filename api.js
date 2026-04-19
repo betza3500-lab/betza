@@ -43,13 +43,65 @@
 
 import { pickHighest, pickLowest } from './modules/utils.js';
 import { load, getDeelnemers, getWedstrijden, getPronos, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions } from './modules/googlesheet.js';
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
-import dotenv from 'dotenv';
 import cors from 'cors';
 
 import { fileURLToPath } from 'url';
-dotenv.config();
+
+const requiredEnvVars = [
+  'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+  'GOOGLE_PRIVATE_KEY',
+  'GOOGLE_SPREADSHEET',
+];
+
+function validateEnvVar(name, value) {
+  if (!value) {
+    return 'missing';
+  }
+
+  if (name === 'GOOGLE_SERVICE_ACCOUNT_EMAIL') {
+    return value.includes('@') ? 'present' : 'invalid';
+  }
+
+  if (name === 'GOOGLE_PRIVATE_KEY') {
+    return value.includes('BEGIN PRIVATE KEY') ? 'present' : 'invalid';
+  }
+
+  if (name === 'GOOGLE_SPREADSHEET') {
+    return value.length >= 20 ? 'present' : 'invalid';
+  }
+
+  return 'present';
+}
+
+function validateStartupConfig() {
+  const envSummary = requiredEnvVars.map((name) => {
+    const value = process.env[name]?.trim() ?? '';
+    const status = validateEnvVar(name, value);
+    return { name, status };
+  });
+
+  const hasConfigErrors = envSummary.some((entry) => entry.status !== 'present');
+  const summaryLines = [
+    'Backend configuration summary:',
+    ...envSummary.map((entry) => `- ${entry.name}: ${entry.status}`),
+    `- PORT: ${process.env.PORT?.trim() || 'default (5000)'}`,
+  ];
+
+  if (hasConfigErrors) {
+    console.error([
+      'Backend startup aborted because required configuration is incomplete.',
+      ...summaryLines,
+    ].join('\n'));
+    process.exit(1);
+  }
+
+  console.log(summaryLines.join('\n'));
+}
+
+validateStartupConfig();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,7 +109,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // https://expressjs.com/en/resources/middleware/cors.html#configuration-options
-var allowlist = ['http://192.168.10.30:5173', 'https://betza.onrender.com']
+var allowlist = ['http://localhost:5173', 'https://betza.onrender.com']
 var corsOptionsDelegate = function (req, callback) {
   var corsOptions;
   if (allowlist.indexOf(req.header('Origin')) !== -1) {
@@ -181,8 +233,19 @@ app.get('/api/prono', cors(corsOptionsDelegate), async (req, res) => {
 ////});
 
 const port = process.env.PORT || 5000;
-app.listen(port);
+const server = app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
+});
 
-console.log(`Listining on port ${port}`);
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Backend startup aborted because port ${port} is already in use.`);
+    process.exit(1);
+  }
+
+  console.error('Backend startup aborted because the server failed to start.');
+  console.error(error);
+  process.exit(1);
+});
 
 
