@@ -2,7 +2,7 @@
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 
 import SvgIcon from 'vue3-icon';
-import { mdiTableLarge, mdiFormatListNumbered, mdiChartLine } from '@mdi/js'
+import { mdiTableLarge, mdiFormatListNumbered, mdiChartLine, mdiLogout } from '@mdi/js'
 import { useAuth } from './composables/useAuth.js'
 import ParticipantAvatar from './components/ParticipantAvatar.vue'
 
@@ -44,8 +44,7 @@ async function handleLogout() {
               :src="user.picture"
               :alt="user.naam ?? user.name"
             />
-            <span class="nav-username d-none d-sm-inline">{{ user?.naam ?? user?.name }}</span>
-            <button class="btn-logout" @click="handleLogout">Afmelden</button>
+            <button class="btn-logout" @click="handleLogout"><svg-icon class="menu-icon" type="mdi" :path="mdiLogout" :size="15"></svg-icon></button>
           </div>
         </b-navbar-nav>
       </b-collapse>
@@ -141,7 +140,7 @@ nav a:first-of-type {
 .btn-logout {
   padding: 0.25rem 0.65rem;
   font-size: 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 0px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   background: transparent;
   color: inherit;
@@ -170,7 +169,12 @@ nav a:first-of-type {
 }
 
 @media (min-width: 576px) {
+  :deep(.navbar-nav) {
+    width: 100%;
+  }
+
   .nav-user {
+    margin-left: auto !important;
     border-top: none;
     padding-top: 0;
     margin-top: 0;

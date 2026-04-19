@@ -111,6 +111,9 @@ export default {
 .podium-container {
   display: flex;
   flex-direction: row;
+  padding-left: 5%;
+  padding-right: 5%;
+  justify-content: center;
   align-items: flex-end;
   justify-content: center;
   gap: 0;

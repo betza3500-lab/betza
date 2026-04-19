@@ -109,20 +109,7 @@ export default {
   line-height: 1.2;
 }
 
-@media (max-width: 640px) {
-  .edition-title {
-    font-size: 1.3rem;
-  }
 
-  .shame-card {
-    width: 100%;
-    padding: 1.75rem 1rem 1.5rem;
-  }
-
-  .participant-name {
-    font-size: 1.05rem;
-  }
-}
 
 .container {
   display: flex;

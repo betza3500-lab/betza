@@ -46,7 +46,7 @@ import { load, getDeelnemers, getWedstrijden, getPronos, getResults, getTotals, 
 import { getAuthorizationUrl, verifyGoogleCode } from './modules/auth.js';
 import 'dotenv/config';
 import express from 'express';
-import session from 'express-session';
+import { getIronSession } from 'iron-session';
 import path from 'path';
 import cors from 'cors';
 import crypto from 'crypto';
@@ -57,6 +57,7 @@ const requiredEnvVars = [
   'GOOGLE_SERVICE_ACCOUNT_EMAIL',
   'GOOGLE_PRIVATE_KEY',
   'GOOGLE_SPREADSHEET',
+  'SESSION_SECRET',
 ];
 
 function validateEnvVar(name, value) {
@@ -74,6 +75,10 @@ function validateEnvVar(name, value) {
 
   if (name === 'GOOGLE_SPREADSHEET') {
     return value.length >= 20 ? 'present' : 'invalid';
+  }
+
+  if (name === 'SESSION_SECRET') {
+    return value.length >= 32 ? 'present' : 'invalid (must be at least 32 characters)';
   }
 
   return 'present';
@@ -187,22 +192,30 @@ app.use(cors({
   credentials: true,
 }));
 
-// Session middleware. Uses an in-memory store which is suitable for this
-// small-team app. Sessions are scoped to the secure, HttpOnly cookie
-// "__Host-session" and expire after 30 days.
+// Session middleware using encrypted cookie sessions.
+// Session payload is encrypted and stored in the cookie.
+// Cookie is scoped to "__Host-session" and expires after 30 days.
 const isProduction = process.env.NODE_ENV === 'production';
-app.use(session({
-  name: '__Host-session',
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
+const mockUserEmail = process.env.MOCK_USER_EMAIL?.trim().toLowerCase() || '';
+const mockUserPictureId = process.env.MOCK_USER_PICTURE_ID?.trim() || 'DXX';
+const mockAuthEnabled = !isProduction && !!mockUserEmail;
+const sessionTtlSeconds = 30 * 24 * 60 * 60;
+const sessionOptions = {
+  cookieName: '__Host-session',
+  password: process.env.SESSION_SECRET,
+  ttl: sessionTtlSeconds,
+  cookieOptions: {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/',
   },
-}));
+};
+
+app.use(async (req, res, next) => {
+  req.session = await getIronSession(req, res, sessionOptions);
+  next();
+});
 
 app.use(express.json());
 
@@ -272,9 +285,49 @@ async function resolveParticipant(email) {
   return row;
 }
 
-app.get('/api/auth/login', (req, res) => {
+async function buildSessionUser(email, fallbackName = null) {
+  const participant = await resolveParticipant(email);
+  if (participant) {
+    return {
+      email,
+      name: participant.name || participant.Deelnemer || fallbackName || email,
+      pictureID: participant.PictureID || mockUserPictureId,
+      picture: participant.PictureID || null,
+      participantId: participant.participant_id ?? null,
+      role: participant.role ?? 'user',
+    };
+  }
+
+  return {
+    email,
+    name: fallbackName || email,
+    pictureID: mockUserPictureId,
+    picture: null,
+    participantId: null,
+    role: 'user',
+  };
+}
+
+async function ensureMockSession(req) {
+  if (!mockAuthEnabled || req.session?.user || req.session?.mockAuthDisabled) {
+    return false;
+  }
+
+  req.session.user = await buildSessionUser(mockUserEmail, 'Local Dev User');
+  await req.session.save();
+  return true;
+}
+
+app.get('/api/auth/login', async (req, res) => {
+  if (mockAuthEnabled) {
+    req.session.mockAuthDisabled = false;
+    await ensureMockSession(req);
+    return res.redirect('/');
+  }
+
   const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
+  await req.session.save();
   const authorizationUrl = getAuthorizationUrl(state);
   res.redirect(authorizationUrl);
 });
@@ -312,6 +365,7 @@ app.get('/api/auth/callback', async (req, res) => {
       participantId: participant.participant_id ?? null,
       role: participant.role ?? 'user',
     };
+    await req.session.save();
 
     return res.redirect('/');
   } catch (error) {
@@ -321,6 +375,15 @@ app.get('/api/auth/callback', async (req, res) => {
 });
 
 app.get('/api/auth/session', (req, res) => {
+  if (mockAuthEnabled && !req.session?.user && !req.session?.mockAuthDisabled) {
+    return ensureMockSession(req)
+      .then(() => res.json({ user: req.session.user }))
+      .catch((error) => {
+        console.error('Mock session initialization failed.', error);
+        res.status(500).json({ error: 'Failed to initialize mock session.' });
+      });
+  }
+
   if (!req.session?.user) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
@@ -329,10 +392,11 @@ app.get('/api/auth/session', (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('__Host-session');
-    res.status(204).end();
-  });
+  if (mockAuthEnabled) {
+    req.session.mockAuthDisabled = true;
+  }
+  req.session.destroy();
+  res.status(204).end();
 });
 
 

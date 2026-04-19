@@ -43,7 +43,7 @@ export default {
       <div class="col"></div>
       <div class="col-12 col-md-6">
         <div class="container">
-          <div v-for="item in ranking" :key="item.deelnemer" class="row rank-item mb-2">
+          <div v-for="item in ranking" :key="item.deelnemer" class="row rank-item mb-0">
             <div class="col-1 d-flex align-items-center">
               <span class="ranking p-0">{{ item.rank }}.</span>
             </div>
@@ -70,23 +70,36 @@ export default {
   color: var(--vt-c-black) !important;
   font-size: larger;
   background-color: var(--betza-light) !important;
+  white-space: nowrap;
 }
 #rankings {
   min-width: 350px;
+  overflow-x: auto;
 }
 
 .rank-item {
   border-bottom: 1px solid var(--betza-light);
   padding-bottom: 0px;
+  flex-wrap: nowrap;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.rank-item > [class*='col-'] {
+  flex-wrap: nowrap;
 }
 
 .ranking {
   font-size: xx-large;
   color: var(--betza-light);
+  white-space: nowrap;
 }
 
 .participant {
   font-size: xx-large;
   color: var(--vt-c-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
