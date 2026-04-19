@@ -36,13 +36,24 @@ cd ..
 
 #### Backend Environment Variables
 
-Create a `.env` file in the root directory with your Google Sheets API credentials:
+Create a `.env` file in the root directory:
 
 ```env
-# Google Sheets API Configuration
+# ── Google Sheets API (service account for read access) ────────────────────
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n"
 GOOGLE_SERVICE_ACCOUNT_EMAIL="your-service-account@your-project.iam.gserviceaccount.com"
 GOOGLE_SPREADSHEET="your-google-sheet-id-here"
+
+# ── Google OAuth2 (for user login) ─────────────────────────────────────────
+GOOGLE_OAUTH_CLIENT_ID="your-oauth-client-id.apps.googleusercontent.com"
+GOOGLE_OAUTH_CLIENT_SECRET="your-oauth-client-secret"
+# For local development use localhost; change to your production URL when deploying.
+GOOGLE_OAUTH_REDIRECT_URI="http://localhost:5000/api/auth/callback"
+
+# ── Session cookie ──────────────────────────────────────────────────────────
+# A long random secret (at least 32 characters). Generate with:
+#   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+SESSION_SECRET="your-long-random-secret-here"
 
 # Environment
 NPM_CONFIG_PRODUCTION="false"
@@ -87,15 +98,57 @@ VITE_API_BASE_URL=https://your-production-api-url.com
    - Extract the `private_key` and `client_email` from the downloaded JSON
    - Add them to your `.env` file as shown above
 
+### 4a. Google OAuth2 Setup (for user login)
+
+The app uses Google Sign-In so that each registered participant can log in
+with their own Google account.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) open the same project.
+2. Go to "APIs & Services" > "Credentials".
+3. Click "Create Credentials" > **OAuth 2.0 Client ID**.
+4. Choose **Web application**.
+5. Add the following **Authorised redirect URIs**:
+   - `http://localhost:5000/api/auth/callback` (development)
+   - `https://your-app.onrender.com/api/auth/callback` (production)
+6. Copy the **Client ID** and **Client secret** into `.env` as
+   `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+
+> **Note**: This is a *different* credential from the service account used for
+> Google Sheets. One project can have both at the same time.
+
 ### 5. Google Sheet Structure
 
-Your Google Sheet should contain the following worksheets:
+Your Google Sheet must contain the following worksheets:
 
-- `deelnemers`: Participant information
-- `wedstrijden`: Match/game data
-- `prono`: Prediction data
-- `resultaten`: Results and scores
+- `deelnemers` – Participant information (see schema below)
+- `wedstrijden` – Match/game data
+- `prono` – Prediction data
+- `resultaten` – Results and scores
 - Additional sheets as needed for your tournament
+
+#### `deelnemers` sheet schema
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `naam` | ✅ | Display name. Must match the column headers in the `prono` sheet exactly. |
+| `participant_id` | ✅ | Stable, immutable identifier (e.g. `D01`). Never reuse a value. |
+| `PictureID` | ✅ | Filename stem for the participant avatar (e.g. `brambo` → `brambo.jpg`). |
+| `kleur` | ✅ | CSS colour used in charts (e.g. `#ff5733`). |
+| `email` | ✅ | Google account email address used for login. Case-insensitive. |
+| `is_active` | optional | `true` (default) or `false`. Set to `false` to block access without deleting the row. |
+| `role` | optional | `participant` (default) or `admin` — for future role-based features. |
+| *Edition columns* | optional | One column per edition (e.g. `WK2022`, `EK2024`). Used for Hall of Fame / Shame. |
+
+> **Note**: All columns before the first edition column (`naam`, `participant_id`,
+> `PictureID`, `kleur`, `email`, `is_active`, `role`) are treated as metadata
+> and are automatically excluded from the edition list.
+
+#### Onboarding a new participant
+
+1. Add a new row to `deelnemers` with all required fields filled in.
+2. Set `is_active` to `true`.
+3. Add the participant's nickname as a new column header in the `prono` sheet.
+4. Communicate to the participant which Google account email they must use.
 
 ### 6. Start the Development Servers
 
@@ -156,11 +209,50 @@ The backend provides the following REST API endpoints:
 - `GET /api/topChartData` - Top 3 performers
 - `GET /api/lowestChartData` - Bottom 3 performers
 
+All data endpoints require a valid session (see Authentication below).
+
+## Authentication
+
+The app uses **Google Sign-In** (OAuth 2.0 / OIDC). Only participants whose
+Google account email is registered in the `deelnemers` sheet can log in.
+
+### Login flow
+
+```
+User browser ──GET /api/auth/login──► Express BFF
+                                           │
+                               redirects to Google OAuth2
+                                           │
+                Google callback ──GET /api/auth/callback──► Express BFF
+                                           │
+                              validates state (CSRF), exchanges code,
+                              verifies ID token, checks email allow-list
+                                           │
+                              creates HttpOnly session cookie
+                              redirects browser to /
+```
+
+### Auth API endpoints (no session required)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/auth/login` | Redirects to Google consent screen |
+| `GET` | `/api/auth/callback` | Handles Google OAuth2 callback |
+| `GET` | `/api/auth/session` | Returns `{user}` or `401` |
+| `POST` | `/api/auth/logout` | Destroys session |
+| `GET` | `/api/me` | Returns participant profile (requires session) |
+
+### Access control
+
+- Only emails listed in the `deelnemers` sheet (`email` column) are allowed.
+- Setting `is_active` to `false` immediately blocks that account.
+- Denied login attempts are logged server-side with the domain part of the email.
+
 ## CORS Configuration
 
-The API is configured to allow requests from:
-- `http://192.168.10.30:5173` (development)
-- `https://betza.onrender.com` (production)
+CORS is enabled for `localhost` origins only (development). In production the
+BFF pattern serves the frontend and API from the same origin, so no CORS
+headers are needed.
 
 ## Deployment
 
@@ -168,9 +260,13 @@ The API is configured to allow requests from:
 
 The backend is configured for deployment on Render:
 
-1. Connect your GitHub repository to Render
-2. Set environment variables in Render dashboard
-3. Deploy
+1. Connect your GitHub repository to Render.
+2. Set all environment variables in the Render dashboard (see `.env` template above).
+   - For `GOOGLE_OAUTH_REDIRECT_URI` use your production URL, e.g.
+     `https://your-app.onrender.com/api/auth/callback`.
+   - Add the same production URL as an Authorised redirect URI in Google Cloud Console.
+3. Set `NODE_ENV=production` so the session cookie is sent only over HTTPS.
+4. Deploy.
 
 ### Frontend Deployment
 

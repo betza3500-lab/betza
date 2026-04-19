@@ -1,4 +1,4 @@
-export { load, getDeelnemers, getPronos, getWedstrijden, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions};
+export { load, getDeelnemers, getPronos, getWedstrijden, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions, getAuthUsers };
 
 import 'dotenv/config';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
@@ -6,6 +6,28 @@ import { JWT } from 'google-auth-library';
 import NodeCache from 'node-cache';
 
 const SCHIFTINGSVRAAG = "Schiftingsvraag";
+
+/**
+ * Known metadata column names in the `deelnemers` sheet.
+ * Any column header NOT in this set is treated as an edition name.
+ * This list must be updated when new metadata columns are added so that
+ * getEditions() does not accidentally include them.
+ */
+const DEELNEMERS_META_COLUMNS = new Set([
+  'naam',
+  'participant_id',
+  'PictureID',
+  'kleur',
+  'email',
+  'is_active',
+  'role',
+]);
+
+/**
+ * Fields from the `deelnemers` sheet that must not be included in public
+ * API responses (e.g. /api/participants, /api/alltimeparticipants).
+ */
+const DEELNEMERS_PRIVATE_FIELDS = new Set(['email', 'is_active', 'role']);
 const myCache = new NodeCache({
   stdTTL: 60,
   checkperiod: 120
@@ -25,6 +47,18 @@ function mapSheetRow(row, headers) {
   });
 
   return item;
+}
+
+/**
+ * Returns a copy of a participant object with private fields removed so
+ * that the public API never exposes email addresses or access control flags.
+ */
+function sanitizeParticipant(participant) {
+  const safe = { ...participant };
+  DEELNEMERS_PRIVATE_FIELDS.forEach((field) => {
+    delete safe[field];
+  });
+  return safe;
 }
 
 function getRequiredEnv(name) {
@@ -90,7 +124,7 @@ async function getAllDeelnemers() {
     const sheet = doc.sheetsByTitle["deelnemers"];
     const rows = await sheet.getRows();
     const headers = sheet.headerValues;
-    const data = rows.map((row) => mapSheetRow(row, headers));
+    const data = rows.map((row) => sanitizeParticipant(mapSheetRow(row, headers)));
     myCache.set('alldeelnemers', data ); 
     return data;
   } 
@@ -103,8 +137,12 @@ async function getEditions() {
     console.log('Fetching deelnemers sheet'); 
     const doc = await load();
     const sheet = doc.sheetsByTitle["deelnemers"];
-    const rows = await sheet.getRows();
-    const editions = sheet.headerValues.slice(3);
+    // getRows() must be called to trigger the google-spreadsheet library to
+    // populate sheet.headerValues before we can read it.
+    await sheet.getRows();
+    // Filter out known metadata columns so that adding new auth fields
+    // (email, is_active, role, participant_id) does not pollute the edition list.
+    const editions = sheet.headerValues.filter((h) => !DEELNEMERS_META_COLUMNS.has(h));
     myCache.set('editions', editions ); 
     return editions;
   } 
@@ -548,4 +586,26 @@ async function getResultBelgium() {
     result.push('F1');
   }
   return result;
+}
+
+/**
+ * Returns the full (unsanitized) list of participant rows from the
+ * `deelnemers` sheet, including auth-specific fields (`email`,
+ * `is_active`, `role`, `participant_id`).
+ *
+ * Used exclusively by the auth middleware – never returned to clients.
+ * Results are cached for the same TTL as other sheet data.
+ */
+async function getAuthUsers() {
+  if (myCache.has("authusers")) {
+    return myCache.get("authusers");
+  }
+  console.log('Fetching auth users from deelnemers sheet');
+  const doc = await load();
+  const sheet = doc.sheetsByTitle["deelnemers"];
+  const rows = await sheet.getRows();
+  const headers = sheet.headerValues;
+  const data = rows.map((row) => mapSheetRow(row, headers));
+  myCache.set('authusers', data);
+  return data;
 }
