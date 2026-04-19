@@ -50,6 +50,7 @@ import { getIronSession } from 'iron-session';
 import path from 'path';
 import cors from 'cors';
 import crypto from 'crypto';
+import helmet from 'helmet';
 
 import { fileURLToPath } from 'url';
 
@@ -116,6 +117,49 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.set('trust proxy', 1);
+
+const isProduction = process.env.NODE_ENV === 'production';
+const allowMockAuth = process.env.ALLOW_MOCK_AUTH?.trim().toLowerCase() === 'true';
+const googleHostedDomain = process.env.GOOGLE_OAUTH_HOSTED_DOMAIN?.trim().toLowerCase() || '';
+const allowedGoogleIssuers = new Set(['accounts.google.com', 'https://accounts.google.com']);
+
+if (isProduction && allowMockAuth) {
+  console.error('Backend startup aborted because mock auth cannot be enabled in production.');
+  process.exit(1);
+}
+
+const contentSecurityPolicyDirectives = {
+  defaultSrc: ["'self'"],
+  baseUri: ["'self'"],
+  connectSrc: ["'self'"],
+  fontSrc: ["'self'", 'data:'],
+  frameAncestors: ["'none'"],
+  imgSrc: ["'self'", 'data:', 'blob:'],
+  objectSrc: ["'none'"],
+  scriptSrc: ["'self'"],
+  styleSrc: ["'self'", "'unsafe-inline'"],
+};
+
+if (isProduction) {
+  contentSecurityPolicyDirectives.upgradeInsecureRequests = [];
+}
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: contentSecurityPolicyDirectives,
+  },
+  hsts: isProduction
+    ? {
+        maxAge: 15552000,
+        includeSubDomains: true,
+        preload: false,
+      }
+    : false,
+  referrerPolicy: {
+    policy: 'same-origin',
+  },
+}));
 
 function getPositiveIntEnv(name, fallback) {
   const value = process.env[name]?.trim();
@@ -194,14 +238,29 @@ app.use(cors({
 
 // Session middleware using encrypted cookie sessions.
 // Session payload is encrypted and stored in the cookie.
-// Cookie is scoped to "__Host-session" and expires after 30 days.
-const isProduction = process.env.NODE_ENV === 'production';
+//
+// Cookie naming strategy:
+//   Production  – "__Host-session": the __Host- prefix mandates Secure + Path=/ +
+//                 no Domain, which locks the cookie to the exact host. This is the
+//                 most secure option but requires HTTPS (Secure flag).
+//   Development – "session": the __Host- prefix requires the Secure attribute per
+//                 RFC 6265bis. Browsers silently drop __Host- cookies that lack
+//                 Secure, so a plain name is used in dev to keep the session
+//                 working over plain HTTP on localhost.
 const mockUserEmail = process.env.MOCK_USER_EMAIL?.trim().toLowerCase() || '';
 const mockUserPictureId = process.env.MOCK_USER_PICTURE_ID?.trim() || 'DXX';
-const mockAuthEnabled = !isProduction && !!mockUserEmail;
+const mockAuthEnabled = !isProduction && allowMockAuth && !!mockUserEmail;
 const sessionTtlSeconds = 30 * 24 * 60 * 60;
+
+if (allowMockAuth && !mockUserEmail) {
+  console.warn('Mock auth was requested, but MOCK_USER_EMAIL is missing. Mock auth is disabled.');
+}
+
+if (mockAuthEnabled) {
+  console.warn('Mock auth is enabled for localhost requests only.');
+}
 const sessionOptions = {
-  cookieName: '__Host-session',
+  cookieName: isProduction ? '__Host-session' : 'session',
   password: process.env.SESSION_SECRET,
   ttl: sessionTtlSeconds,
   cookieOptions: {
@@ -253,18 +312,70 @@ function getClientIp(req) {
   return req.ip || req.socket?.remoteAddress || '-';
 }
 
+function sanitizeLogValue(value) {
+  const sanitized = String(value ?? '-')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/"/g, '\'')
+    .trim();
+
+  return sanitized || '-';
+}
+
+function isLocalHostname(hostname) {
+  const normalized = String(hostname ?? '').trim().toLowerCase();
+  return normalized === 'localhost'
+    || normalized === '127.0.0.1'
+    || normalized === '::1'
+    || normalized === '[::1]';
+}
+
+function isMockAuthAllowedForRequest(req) {
+  return mockAuthEnabled && isLocalHostname(req.hostname);
+}
+
+async function rotateSessionPayload(req, res, payload = {}) {
+  await req.session.destroy();
+  req.session = await getIronSession(req, res, sessionOptions);
+  Object.assign(req.session, payload);
+  await req.session.save();
+}
+
+function requireAuth(req, res, next) {
+  if (!req.session?.user) {
+    return res.status(401).json({ error: 'Not authenticated.' });
+  }
+
+  return next();
+}
+
+function isValidGoogleIdentity(payload) {
+  if (!payload || payload.email_verified !== true) {
+    return false;
+  }
+
+  if (!allowedGoogleIssuers.has(payload.iss)) {
+    return false;
+  }
+
+  if (googleHostedDomain && payload.hd?.trim().toLowerCase() !== googleHostedDomain) {
+    return false;
+  }
+
+  return true;
+}
+
 app.use((req, res, next) => {
   res.on('finish', () => {
     const timestamp = new Date().toISOString();
-    const ip = getClientIp(req);
-    const email = req.session?.user?.email || '-';
-    const method = req.method;
-    const uri = req.originalUrl || req.url || '-';
+    const ip = sanitizeLogValue(getClientIp(req));
+    const email = sanitizeLogValue(req.session?.user?.email || '-');
+    const method = sanitizeLogValue(req.method);
+    const uri = sanitizeLogValue(req.originalUrl || req.url || '-');
     const httpVersion = `${req.httpVersionMajor}.${req.httpVersionMinor}`;
     const status = res.statusCode;
-    const bytes = res.getHeader('content-length') || '-';
-    const referer = req.get('referer') || '-';
-    const userAgent = req.get('user-agent') || '-';
+    const bytes = sanitizeLogValue(res.getHeader('content-length') || '-');
+    const referer = sanitizeLogValue(req.get('referer') || '-');
+    const userAgent = sanitizeLogValue(req.get('user-agent') || '-');
 
     console.log(
       `${timestamp} ${ip} - ${email} "${method} ${uri} HTTP/${httpVersion}" ${status} ${bytes} "${referer}" "${userAgent}"`,
@@ -308,20 +419,24 @@ async function buildSessionUser(email, fallbackName = null) {
   };
 }
 
-async function ensureMockSession(req) {
-  if (!mockAuthEnabled || req.session?.user || req.session?.mockAuthDisabled) {
+async function ensureMockSession(req, res) {
+  if (!isMockAuthAllowedForRequest(req) || req.session?.user || req.session?.mockAuthDisabled) {
     return false;
   }
 
-  req.session.user = await buildSessionUser(mockUserEmail, 'Local Dev User');
-  await req.session.save();
+  const user = await buildSessionUser(mockUserEmail, 'Local Dev User');
+  await rotateSessionPayload(req, res, {
+    user,
+    mockAuthDisabled: false,
+  });
   return true;
 }
 
 app.get('/api/auth/login', async (req, res) => {
-  if (mockAuthEnabled) {
+  if (isMockAuthAllowedForRequest(req)) {
     req.session.mockAuthDisabled = false;
-    await ensureMockSession(req);
+    await req.session.save();
+    await ensureMockSession(req, res);
     return res.redirect('/');
   }
 
@@ -345,9 +460,15 @@ app.get('/api/auth/callback', async (req, res) => {
     }
 
     delete req.session.oauthState;
+    await req.session.save();
 
     const payload = await verifyGoogleCode(code);
-    const email = payload?.email?.trim().toLowerCase();
+
+    if (!isValidGoogleIdentity(payload)) {
+      return res.status(401).json({ error: 'Google identity verification failed.' });
+    }
+
+    const email = payload.email?.trim().toLowerCase();
 
     if (!email) {
       return res.status(401).json({ error: 'Google account email not available.' });
@@ -358,14 +479,15 @@ app.get('/api/auth/callback', async (req, res) => {
       return res.status(403).json({ error: 'Account is not allowed to sign in.' });
     }
 
-    req.session.user = {
-      email,
-      name: payload.name || participant.name || participant.Deelnemer || email,
-      picture: payload.picture || null,
-      participantId: participant.participant_id ?? null,
-      role: participant.role ?? 'user',
-    };
-    await req.session.save();
+    await rotateSessionPayload(req, res, {
+      user: {
+        email,
+        name: payload.name || participant.name || participant.Deelnemer || email,
+        picture: payload.picture || null,
+        participantId: participant.participant_id ?? null,
+        role: participant.role ?? 'user',
+      },
+    });
 
     return res.redirect('/');
   } catch (error) {
@@ -375,8 +497,8 @@ app.get('/api/auth/callback', async (req, res) => {
 });
 
 app.get('/api/auth/session', (req, res) => {
-  if (mockAuthEnabled && !req.session?.user && !req.session?.mockAuthDisabled) {
-    return ensureMockSession(req)
+  if (isMockAuthAllowedForRequest(req) && !req.session?.user && !req.session?.mockAuthDisabled) {
+    return ensureMockSession(req, res)
       .then(() => res.json({ user: req.session.user }))
       .catch((error) => {
         console.error('Mock session initialization failed.', error);
@@ -391,14 +513,19 @@ app.get('/api/auth/session', (req, res) => {
   return res.json({ user: req.session.user });
 });
 
-app.post('/api/auth/logout', (req, res) => {
-  if (mockAuthEnabled) {
-    req.session.mockAuthDisabled = true;
+app.post('/api/auth/logout', async (req, res) => {
+  if (isMockAuthAllowedForRequest(req)) {
+    await rotateSessionPayload(req, res, {
+      mockAuthDisabled: true,
+    });
+    return res.status(204).end();
   }
-  req.session.destroy();
-  res.status(204).end();
+
+  await req.session.destroy();
+  return res.status(204).end();
 });
 
+app.use('/api', requireAuth);
 
 async function calculatePronos(id) {
   await load();

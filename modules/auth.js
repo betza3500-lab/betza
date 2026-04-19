@@ -24,6 +24,10 @@ function getRequiredEnv(name) {
   return value;
 }
 
+function getOptionalEnv(name) {
+  return process.env[name]?.trim() || '';
+}
+
 /**
  * Returns a configured OAuth2Client instance.
  */
@@ -45,12 +49,19 @@ function getOAuthClient() {
  */
 export function getAuthorizationUrl(state) {
   const client = getOAuthClient();
-  return client.generateAuthUrl({
+  const hostedDomain = getOptionalEnv('GOOGLE_OAUTH_HOSTED_DOMAIN').toLowerCase();
+  const authUrlOptions = {
     access_type: 'online',
     scope: ['openid', 'email', 'profile'],
     prompt: 'select_account',
     state,
-  });
+  };
+
+  if (hostedDomain) {
+    authUrlOptions.hd = hostedDomain;
+  }
+
+  return client.generateAuthUrl(authUrlOptions);
 }
 
 /**
@@ -66,6 +77,11 @@ export function getAuthorizationUrl(state) {
 export async function verifyGoogleCode(code) {
   const client = getOAuthClient();
   const { tokens } = await client.getToken(code);
+
+  if (!tokens.id_token) {
+    throw new Error('Google OAuth response did not include an ID token.');
+  }
+
   const ticket = await client.verifyIdToken({
     idToken: tokens.id_token,
     audience: getRequiredEnv('GOOGLE_OAUTH_CLIENT_ID'),
