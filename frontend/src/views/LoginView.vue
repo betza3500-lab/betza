@@ -26,14 +26,13 @@ const errorMessage = computed(() => {
 <template>
   <main class="login-page container">
     <div class="row justify-content-center">
-      <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+      <div class="col-12">
         <div class="login-card">
           <img
             alt="Betza logo"
             class="login-logo"
             src="@/assets/logo.svg"
           />
-          <h1 class="login-title">Betza</h1>
           <p class="login-subtitle">Aanmelden om verder te gaan</p>
 
           <div v-if="errorMessage" class="error-box" role="alert">

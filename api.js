@@ -22,6 +22,8 @@
  * - GOOGLE_OAUTH_CLIENT_ID: OAuth2 web-app client ID (Google Cloud Console)
  * - GOOGLE_OAUTH_CLIENT_SECRET: OAuth2 client secret
  * - SESSION_SECRET: Long random string used to sign the session cookie
+ * - MOCK_USER_EMAIL: (dev only) When set and NODE_ENV != 'production', skips
+ *                   OAuth and treats this email as the signed-in user.
  *
  * API Endpoints (public – no auth required):
  * - GET  /api/auth/login    - Redirect to Google OAuth2 consent screen
@@ -244,10 +246,10 @@ app.use(cors({
 
 // Session middleware. Uses an in-memory store which is suitable for this
 // small-team app. Sessions are scoped to the secure, HttpOnly cookie
-// "betza.sid" and expire after 7 days.
+// "__Host-session" and expire after 30 days.
 const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
-  name: 'betza.sid',
+  name: '__Host-session',
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -255,7 +257,7 @@ app.use(session({
     httpOnly: true,
     secure: isProduction,
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
 }));
 
@@ -289,8 +291,19 @@ async function resolveParticipant(email) {
  * Express middleware that requires a valid authenticated session.
  * Returns 401 when the session has no user and 403 when the user is no
  * longer in the allow-list (e.g. deactivated between sessions).
+ *
+ * Dev bypass: when NODE_ENV !== 'production' and MOCK_USER_EMAIL is set,
+ * the session user is populated automatically from that email address.
  */
 async function requireAuth(req, res, next) {
+  // ------------------------------------------------------------------
+  // Dev bypass: skip OAuth when MOCK_USER_EMAIL is configured locally.
+  // ------------------------------------------------------------------
+  if (!isProduction && process.env.MOCK_USER_EMAIL && !req.session?.user) {
+    const mockEmail = process.env.MOCK_USER_EMAIL.trim().toLowerCase();
+    req.session.user = {naam:"Foo Bar",pictureID:"foobar",role:"participant",participantId:"foobar", email: mockEmail };
+  }
+
   if (!req.session?.user) {
     return res.status(401).json({ error: 'Not authenticated. Please log in.' });
   }
@@ -393,6 +406,11 @@ app.get('/api/auth/callback', authRateLimiter, async (req, res) => {
  * The frontend calls this on startup to restore auth state.
  */
 app.get('/api/auth/session', (req, res) => {
+  // Dev bypass: auto-populate session from MOCK_USER_EMAIL.
+  if (!isProduction && process.env.MOCK_USER_EMAIL && !req.session?.user) {
+    const mockEmail = process.env.MOCK_USER_EMAIL.trim().toLowerCase();
+    req.session.user = { email: mockEmail, name: mockEmail, picture: null };
+  }
   if (!req.session?.user) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
