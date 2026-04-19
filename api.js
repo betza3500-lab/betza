@@ -9,6 +9,7 @@
  *
  * @requires dotenv - Environment variable management
  * @requires express - Web framework
+ * @requires cors - Cross-origin resource sharing (localhost only)
  * @requires google-spreadsheet - Google Sheets integration
  *
  * Environment Variables:
@@ -31,9 +32,9 @@
  * - GET /api/lowestChartData - Get bottom 3 performers
  *
  * CORS Configuration:
- * Not required — the BFF pattern serves frontend and API from the
- * same origin. In development, Vite's dev-server proxy forwards
- * /api requests to the backend.
+ * Enabled for localhost origins only (development). In production the
+ * BFF pattern serves frontend and API from the same origin, so CORS
+ * headers are not required.
  *
  * Usage:
  * npm start - Start the server
@@ -45,6 +46,7 @@ import { load, getDeelnemers, getWedstrijden, getPronos, getResults, getTotals, 
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
+import cors from 'cors';
 
 import { fileURLToPath } from 'url';
 
@@ -105,6 +107,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Enable CORS for localhost origins only (development).
+// In production the BFF pattern serves frontend and API from the same
+// origin, so CORS headers are not required.
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  }
+}));
 
 
 async function calculatePronos(id) {
