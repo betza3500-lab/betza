@@ -42,12 +42,14 @@
  */
 
 import { pickHighest, pickLowest } from './modules/utils.js';
-import { load, getDeelnemers, getWedstrijden, getPronos, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions } from './modules/googlesheet.js';
+import { load, getDeelnemers, getWedstrijden, getPronos, getResults, getTotals, getGrafiekData, getAllDeelnemers, getEditions, getAuthUsers } from './modules/googlesheet.js';
+import { getAuthorizationUrl, verifyGoogleCode } from './modules/auth.js';
 import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import path from 'path';
 import cors from 'cors';
+import crypto from 'crypto';
 
 import { fileURLToPath } from 'url';
 
@@ -260,6 +262,78 @@ app.use((req, res, next) => {
 });
 
 app.use('/api', apiRateLimiter);
+
+async function resolveParticipant(email) {
+  const authUsers = await getAuthUsers();
+  const row = authUsers.find((u) => u.email?.trim().toLowerCase() === email);
+  if (!row) return null;
+  const active = String(row.is_active ?? 'true').trim().toLowerCase();
+  if (active === 'false' || active === '0') return null;
+  return row;
+}
+
+app.get('/api/auth/login', (req, res) => {
+  const state = crypto.randomBytes(16).toString('hex');
+  req.session.oauthState = state;
+  const authorizationUrl = getAuthorizationUrl(state);
+  res.redirect(authorizationUrl);
+});
+
+app.get('/api/auth/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ error: 'Missing authorization code.' });
+    }
+
+    if (!state || typeof state !== 'string' || state !== req.session.oauthState) {
+      return res.status(400).json({ error: 'Invalid OAuth state.' });
+    }
+
+    delete req.session.oauthState;
+
+    const payload = await verifyGoogleCode(code);
+    const email = payload?.email?.trim().toLowerCase();
+
+    if (!email) {
+      return res.status(401).json({ error: 'Google account email not available.' });
+    }
+
+    const participant = await resolveParticipant(email);
+    if (!participant) {
+      return res.status(403).json({ error: 'Account is not allowed to sign in.' });
+    }
+
+    req.session.user = {
+      email,
+      name: payload.name || participant.name || participant.Deelnemer || email,
+      picture: payload.picture || null,
+      participantId: participant.participant_id ?? null,
+      role: participant.role ?? 'user',
+    };
+
+    return res.redirect('/');
+  } catch (error) {
+    console.error('OAuth callback failed.', error);
+    return res.status(401).json({ error: 'Authentication failed.' });
+  }
+});
+
+app.get('/api/auth/session', (req, res) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ error: 'Not authenticated.' });
+  }
+
+  return res.json({ user: req.session.user });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie('__Host-session');
+    res.status(204).end();
+  });
+});
 
 
 async function calculatePronos(id) {
