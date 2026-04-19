@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import VueLoading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
+import { useAuth } from './composables/useAuth.js';
 
 
 import 'bootstrap/dist/css/bootstrap.css'
@@ -20,4 +21,10 @@ app.use(VueLoading, {
   // props
   color: "#00bd7e"
 });
-app.mount('#app')
+
+// Eagerly check the session so that the router guard has auth state
+// available before the first navigation resolves.
+const { checkSession } = useAuth();
+checkSession().finally(() => {
+  app.mount('#app');
+});
