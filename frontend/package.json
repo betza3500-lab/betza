@@ -21,7 +21,7 @@
     "vue3-loading-screen": "^1.0.3"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^3.0.3",
-    "vite": "^3.0.9"
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "^8.0.8"
   }
 }
