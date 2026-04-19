@@ -137,6 +137,8 @@ async function getEditions() {
     console.log('Fetching deelnemers sheet'); 
     const doc = await load();
     const sheet = doc.sheetsByTitle["deelnemers"];
+    // getRows() must be called to trigger the google-spreadsheet library to
+    // populate sheet.headerValues before we can read it.
     await sheet.getRows();
     // Filter out known metadata columns so that adding new auth fields
     // (email, is_active, role, participant_id) does not pollute the edition list.

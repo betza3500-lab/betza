@@ -196,6 +196,41 @@ setInterval(() => {
   });
 }, bucketCleanupInterval).unref();
 
+// Stricter rate limiter applied only to auth endpoints:
+// max 10 requests per 5 minutes per IP.
+const authRateLimitWindowMs = 5 * 60_000;
+const authRateLimitMaxRequests = 10;
+const authRateLimitBuckets = new Map();
+
+function authRateLimiter(req, res, next) {
+  const now = Date.now();
+  const key = getRateLimitKey(req);
+  let bucket = authRateLimitBuckets.get(key);
+
+  if (!bucket || now >= bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + authRateLimitWindowMs };
+    authRateLimitBuckets.set(key, bucket);
+  }
+
+  if (bucket.count >= authRateLimitMaxRequests) {
+    const retryAfterSeconds = Math.max(Math.ceil((bucket.resetAt - now) / 1000), 1);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many authentication attempts. Please try again later.' });
+  }
+
+  bucket.count += 1;
+  return next();
+}
+
+setInterval(() => {
+  const now = Date.now();
+  authRateLimitBuckets.forEach((bucket, key) => {
+    if (now >= bucket.resetAt) {
+      authRateLimitBuckets.delete(key);
+    }
+  });
+}, authRateLimitWindowMs).unref();
+
 // Enable CORS for localhost origins only (development).
 // In production the BFF pattern serves frontend and API from the same
 // origin, so CORS headers are not required.
@@ -286,7 +321,7 @@ async function requireAuth(req, res, next) {
  * Redirects the browser to the Google OAuth2 consent screen.
  * A random state nonce is stored in the session to prevent CSRF.
  */
-app.get('/api/auth/login', (req, res) => {
+app.get('/api/auth/login', authRateLimiter, (req, res) => {
   const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
   req.session.save((err) => {
@@ -304,7 +339,7 @@ app.get('/api/auth/login', (req, res) => {
  * the code for an ID token, validates the email against the allow-list,
  * and creates a session.
  */
-app.get('/api/auth/callback', async (req, res) => {
+app.get('/api/auth/callback', authRateLimiter, async (req, res) => {
   const { code, state, error } = req.query;
 
   if (error) {
