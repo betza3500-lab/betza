@@ -6,7 +6,7 @@
       required: true
     },
     result: {
-      type: String,
+      type: Array,
       required: false
     },
     pronoResults: {
