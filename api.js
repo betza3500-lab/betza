@@ -124,15 +124,9 @@ const apiRateLimitMaxRequests = getPositiveIntEnv('API_RATE_LIMIT_MAX_REQUESTS',
 const apiRateLimitBuckets = new Map();
 
 function getRateLimitKey(req) {
-  const forwardedForHeader = req.headers['x-forwarded-for'];
-  const firstForwardedIp = Array.isArray(forwardedForHeader)
-    ? forwardedForHeader[0]
-    : forwardedForHeader?.split(',')[0]?.trim();
-
   return (
     req.ip ||
     req.socket?.remoteAddress ||
-    firstForwardedIp ||
     'unknown-client'
   );
 }
@@ -146,6 +140,16 @@ function apiRateLimiter(req, res, next) {
     bucket = { count: 0, resetAt: now + apiRateLimitWindowMs };
     apiRateLimitBuckets.set(key, bucket);
   }
+
+  if (bucket.count >= apiRateLimitMaxRequests) {
+    const retryAfterSeconds = Math.max(Math.ceil((bucket.resetAt - now) / 1000), 1);
+    res.setHeader('X-RateLimit-Limit', String(apiRateLimitMaxRequests));
+    res.setHeader('X-RateLimit-Remaining', '0');
+    res.setHeader('X-RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many API requests. Please try again later.' });
+  }
+
   bucket.count += 1;
 
   const remaining = Math.max(apiRateLimitMaxRequests - bucket.count, 0);
@@ -153,16 +157,10 @@ function apiRateLimiter(req, res, next) {
   res.setHeader('X-RateLimit-Remaining', String(remaining));
   res.setHeader('X-RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
 
-  if (bucket.count > apiRateLimitMaxRequests) {
-    const retryAfterSeconds = Math.max(Math.ceil((bucket.resetAt - now) / 1000), 1);
-    res.setHeader('Retry-After', String(retryAfterSeconds));
-    return res.status(429).json({ error: 'Too many API requests. Please try again later.' });
-  }
-
   return next();
 }
 
-const bucketCleanupInterval = 60_000;
+const bucketCleanupInterval = getPositiveIntEnv('API_RATE_LIMIT_CLEANUP_INTERVAL_MS', 60_000);
 setInterval(() => {
   const now = Date.now();
   apiRateLimitBuckets.forEach((bucket, key) => {
