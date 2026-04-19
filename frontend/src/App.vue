@@ -16,23 +16,20 @@ async function handleLogout() {
 </script>
 
 <template>
-  <template v-if="isAuthenticated">
-    <b-navbar toggleable="sm" dark fix="top" sticky="top" class="p-0">
-      <b-navbar-brand class="logos">
-        <RouterLink to="/"><img alt="Betza logo" class="ms-2 logo" src="@/assets/logo.svg" /></RouterLink>
-      </b-navbar-brand>
+  <b-navbar toggleable="sm" dark fix="top" sticky="top" class="p-0">
+    <b-navbar-brand class="logos">
+      <RouterLink to="/"><img alt="Betza logo" class="ms-2 logo" src="@/assets/logo.svg" /></RouterLink>
+    </b-navbar-brand>
+
+    <template v-if="isAuthenticated">
       <div class="d-sm-none d-flex justify-content-evenly flex-grow-1">
-      <!--
-        <b-link active-class="active" class="nav-link prono flex-grow" target="_blank" href="https://forms.gle/5Be7stkJmnizxYsT9"><span class="d-flex justify-content-center">Geef pronostiek</span></b-link> 
-      -->
-      <b-link active-class="active" class="nav-link" to="/resultaat"><svg-icon class="menu-icon" type="mdi" :path="mdiTableLarge" :size="30"></svg-icon></b-link>
-      <b-link active-class="active" class="nav-link" to="/grafiek"><svg-icon class="menu-icon" type="mdi" :path="mdiChartLine" :size="30"></svg-icon></b-link>
-      <b-link active-class="active" class="nav-link" to="/tussenstand"><svg-icon class="menu-icon" type="mdi" :path="mdiFormatListNumbered" :size="30"></svg-icon></b-link>
+        <b-link active-class="active" class="nav-link" to="/resultaat"><svg-icon class="menu-icon" type="mdi" :path="mdiTableLarge" :size="30"></svg-icon></b-link>
+        <b-link active-class="active" class="nav-link" to="/grafiek"><svg-icon class="menu-icon" type="mdi" :path="mdiChartLine" :size="30"></svg-icon></b-link>
+        <b-link active-class="active" class="nav-link" to="/tussenstand"><svg-icon class="menu-icon" type="mdi" :path="mdiFormatListNumbered" :size="30"></svg-icon></b-link>
       </div>
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
       <b-collapse id="nav-collapse" is-nav>
-        <b-navbar-nav>   
-          <!-- <b-link active-class="active" class="nav-link prono" target="_blank" href="https://forms.gle/5Be7stkJmnizxYsT9"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Geef pronostiek</span></b-link> -->
+        <b-navbar-nav>
           <b-link active-class="active" class="nav-link" to="/resultaat"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Resultaat</span></b-link>
           <b-link active-class="active" class="nav-link" to="/grafiek"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Grafiek</span></b-link>
           <b-link active-class="active" class="nav-link" to="/tussenstand"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Tussenstand</span></b-link>
@@ -52,12 +49,16 @@ async function handleLogout() {
           </div>
         </b-navbar-nav>
       </b-collapse>
-    </b-navbar>
-    <RouterView />
-  </template>
-  <template v-else>
-    <RouterView />
-  </template>
+    </template>
+
+    <template v-else>
+      <div class="ms-auto me-2">
+        <RouterLink to="/login" class="btn-login">Aanmelden</RouterLink>
+      </div>
+    </template>
+  </b-navbar>
+
+  <RouterView />
 </template>
 
 <style scoped>
@@ -151,6 +152,21 @@ nav a:first-of-type {
 
 .btn-logout:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-login {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.btn-login:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
 }
 
 @media (min-width: 576px) {
