@@ -107,6 +107,68 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', 1);
+
+function getPositiveIntEnv(name, fallback) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const apiRateLimitWindowMs = getPositiveIntEnv('API_RATE_LIMIT_WINDOW_MS', 60_000);
+const apiRateLimitMaxRequests = getPositiveIntEnv('API_RATE_LIMIT_MAX_REQUESTS', 120);
+const apiRateLimitBuckets = new Map();
+
+function getRateLimitKey(req) {
+  return (
+    req.ip ||
+    req.socket?.remoteAddress ||
+    'unknown-client'
+  );
+}
+
+function apiRateLimiter(req, res, next) {
+  const now = Date.now();
+  const key = getRateLimitKey(req);
+  let bucket = apiRateLimitBuckets.get(key);
+
+  if (!bucket || now >= bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + apiRateLimitWindowMs };
+    apiRateLimitBuckets.set(key, bucket);
+  }
+
+  if (bucket.count >= apiRateLimitMaxRequests) {
+    const retryAfterSeconds = Math.max(Math.ceil((bucket.resetAt - now) / 1000), 1);
+    res.setHeader('X-RateLimit-Limit', String(apiRateLimitMaxRequests));
+    res.setHeader('X-RateLimit-Remaining', '0');
+    res.setHeader('X-RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    return res.status(429).json({ error: 'Too many API requests. Please try again later.' });
+  }
+
+  bucket.count += 1;
+
+  const remaining = Math.max(apiRateLimitMaxRequests - bucket.count, 0);
+  res.setHeader('X-RateLimit-Limit', String(apiRateLimitMaxRequests));
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
+
+  return next();
+}
+
+const bucketCleanupInterval = getPositiveIntEnv('API_RATE_LIMIT_CLEANUP_INTERVAL_MS', 60_000);
+setInterval(() => {
+  const now = Date.now();
+  apiRateLimitBuckets.forEach((bucket, key) => {
+    if (now >= bucket.resetAt) {
+      apiRateLimitBuckets.delete(key);
+    }
+  });
+}, bucketCleanupInterval).unref();
 
 // Enable CORS for localhost origins only (development).
 // In production the BFF pattern serves frontend and API from the same
@@ -120,6 +182,8 @@ app.use(cors({
     }
   }
 }));
+
+app.use('/api', apiRateLimiter);
 
 
 async function calculatePronos(id) {
@@ -252,5 +316,3 @@ server.on('error', (error) => {
   console.error(error);
   process.exit(1);
 });
-
-
