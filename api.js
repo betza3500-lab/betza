@@ -204,10 +204,44 @@ app.use(session({
 
 app.use(express.json());
 
+function normalizeForwardedIp(value) {
+  if (!value) return null;
+  let ip = String(value).trim().replace(/^"|"$/g, '');
+  if (!ip || ip.toLowerCase() === 'unknown') return null;
+  if (ip.startsWith('[') && ip.includes(']')) {
+    ip = ip.slice(1, ip.indexOf(']'));
+    return ip || null;
+  }
+  const colonCount = (ip.match(/:/g) || []).length;
+  if (colonCount === 1 && ip.includes('.')) {
+    const [host] = ip.split(':');
+    return host || null;
+  }
+  return ip;
+}
+
+function getClientIp(req) {
+  const forwarded = req.get('forwarded');
+  if (forwarded) {
+    const match = forwarded.match(/for=([^;,"]+|"[^"]+")/i);
+    const forwardedIp = normalizeForwardedIp(match?.[1]);
+    if (forwardedIp) return forwardedIp;
+  }
+
+  const xForwardedFor = req.get('x-forwarded-for');
+  if (xForwardedFor) {
+    const first = xForwardedFor.split(',')[0];
+    const xffIp = normalizeForwardedIp(first);
+    if (xffIp) return xffIp;
+  }
+
+  return req.ip || req.socket?.remoteAddress || '-';
+}
+
 app.use((req, res, next) => {
   res.on('finish', () => {
     const timestamp = new Date().toISOString();
-    const ip = req.ip || req.socket?.remoteAddress || '-';
+    const ip = getClientIp(req);
     const email = req.session?.user?.email || '-';
     const method = req.method;
     const uri = req.originalUrl || req.url || '-';
