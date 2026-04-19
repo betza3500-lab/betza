@@ -133,7 +133,7 @@ function getRateLimitKey(req) {
     req.ip ||
     req.socket?.remoteAddress ||
     firstForwardedIp ||
-    `anonymous:${req.get('user-agent') || 'unknown'}`
+    'unknown-client'
   );
 }
 
@@ -162,7 +162,7 @@ function apiRateLimiter(req, res, next) {
   return next();
 }
 
-const bucketCleanupInterval = Math.max(apiRateLimitWindowMs, 60_000);
+const bucketCleanupInterval = 60_000;
 setInterval(() => {
   const now = Date.now();
   apiRateLimitBuckets.forEach((bucket, key) => {
