@@ -21,9 +21,6 @@
  * Environment Variables (OAuth / Auth):
  * - GOOGLE_OAUTH_CLIENT_ID: OAuth2 web-app client ID (Google Cloud Console)
  * - GOOGLE_OAUTH_CLIENT_SECRET: OAuth2 client secret
- * - GOOGLE_OAUTH_REDIRECT_URI: Redirect URI registered in Google Cloud Console
- *     dev:  http://localhost:5000/api/auth/callback
- *     prod: https://your-app.onrender.com/api/auth/callback
  * - SESSION_SECRET: Long random string used to sign the session cookie
  *
  * API Endpoints (public – no auth required):
@@ -74,7 +71,6 @@ const requiredEnvVars = [
   'GOOGLE_SPREADSHEET',
   'GOOGLE_OAUTH_CLIENT_ID',
   'GOOGLE_OAUTH_CLIENT_SECRET',
-  'GOOGLE_OAUTH_REDIRECT_URI',
   'SESSION_SECRET',
 ];
 
