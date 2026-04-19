@@ -46,42 +46,86 @@ export default {
 }
 </script>
 <template>
-  <div v-for="edition in editions">
-    <h2 class="name">{{edition}}</h2>
-        <div class="container">
-        <template v-for="participant in participants">
-          <div style="order: 4" v-if="participant[edition] == 'L'">
-            <div class="pictureContainer">
-              <ParticipantPicture  border="5px solid #FF80FF" ribbon="LOSER"  :pictureId="participant.PictureID" />
-            </div>
-            <div class="name">{{participant.naam}}</div>
-          </div>
+  <div class="hall-of-shame" v-for="edition in editions" :key="edition">
+    <h2 class="edition-title">{{ edition }}</h2>
+    <div class="shame-stage">
+      <template v-for="participant in participants" :key="participant.PictureID + edition">
+        <div class="shame-card" v-if="participant[edition] == 'L'">
+          <ParticipantPicture
+              pictureSize="150px"
+              border="6px solid #ff80ff"
+              ribbon="LOSER"
+              :pictureId="participant.PictureID"
+            />
+          <div class="participant-name">{{ participant.naam }}</div>
+        </div>
       </template>
     </div>
   </div>
 </template>
 
-<style>
-.name {
+<style scoped>
+.hall-of-shame {
+  margin-bottom: 4rem;
+}
+
+.edition-title {
   text-align: center;
-
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  color: var(--betza-light);
 }
-.break {
-  flex-basis: 100%;
-  height: 0;
-}
 
-.pictureContainer {
+.shame-stage {
   display: flex;
   justify-content: center;
+  margin-bottom: 3rem;
+}
+
+.shame-badge {
+  position: relative;
+  z-index: 1;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff9956, #c55d27);
+  color: #fff7e8;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 18px rgba(197, 93, 39, 0.35);
+}
+
+
+
+.participant-name {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffe8c8;
+  line-height: 1.2;
+}
+
+@media (max-width: 640px) {
+  .edition-title {
+    font-size: 1.3rem;
+  }
+
+  .shame-card {
+    width: 100%;
+    padding: 1.75rem 1rem 1.5rem;
+  }
+
+  .participant-name {
+    font-size: 1.05rem;
+  }
 }
 
 .container {
   display: flex;
-  gap: 20px;
-  flex-direction: row;
-  align-items: end;
   justify-content: center;
-  margin-bottom: 3rem;
 }
 </style>

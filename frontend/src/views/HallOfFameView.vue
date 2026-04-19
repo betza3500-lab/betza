@@ -105,8 +105,7 @@ export default {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 1.5rem;
-  color: #f0c040;
-  text-shadow: 0 0 12px rgba(218, 165, 32, 0.6);
+  color: var(--betza-light);
 }
 
 .podium-container {
