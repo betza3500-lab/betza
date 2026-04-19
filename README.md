@@ -1,6 +1,6 @@
 # Betza
 
-A full-stack betting/prediction application for tournament competitions. The backend serves data from Google Sheets via REST API, while the frontend provides a Vue.js interface for participants to view results, predictions, and statistics.
+A full-stack betting/prediction application for tournament competitions. The backend serves data from Google Sheets via REST API, while the frontend provides a Vue.js interface for participants to view results, predictions, and statistics. Login is intergrated with Google.
 
 ## Prerequisites
 
