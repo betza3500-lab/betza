@@ -226,8 +226,13 @@ app.get('/api/prono', async (req, res) => {
 });
 
 
-// SPA catchall: for any request that doesn't match an API route
-// above, send back the frontend index.html file.
+// Return 404 for any /api/* request that wasn't matched above.
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// SPA catchall: for any non-API request that doesn't match a static
+// file, send back the frontend index.html so the Vue router handles it.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, './frontend/dist/index.html'));
 });
