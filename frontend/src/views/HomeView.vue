@@ -185,8 +185,8 @@ q {
             </div>
             <!--
                 <p><img class="d-inline-flex float-end my-1 ms-4" :style="{ height: '110px', borderRadius: '10px' }"
-                :src="money" />Nu het EK met rasse schreden nadert, kunnen jullie dus van start gaan met het uitwerken van
-              jullie strategie voor het komende EK.</p>
+                :src="money" />Nu het WK met rasse schreden nadert, kunnen jullie dus van start gaan met het uitwerken van
+              jullie strategie voor het komende WK.</p>
             <p>Inschrijvingen moeten ten laatste binnen zijn op <strong>woensdag 12 juni</strong>!</p>
             <p></p>
 
@@ -246,20 +246,21 @@ q {
 
             <div class="subsection">
               <h3 class="subsection-title">Bonusvraag</h3>
-              <p>Waar eindigt België in het EK?<br>Durf wordt beloond! Hoe verder je gokt, hoe meer punten te pakken.</p>
+              <p>Waar eindigt België in het WK?<br>Durf wordt beloond! Hoe verder je gokt, hoe meer punten te pakken.</p>
               <ul class="points-list">
                 <li>Voorronde : 2 ptn</li>
+                <li>Zestiende finale : TODO ptn</li>
                 <li>Achtste finale : 3 ptn</li>
                 <li>Kwartfinale : 5 ptn</li>
                 <li>Halve finale : 7 ptn</li>
                 <li>Finale : 9 ptn</li>
-                <li>Winnaar van het EK : 10 ptn</li>
+                <li>Winnaar van het WK : 10 ptn</li>
               </ul>
             </div>
 
             <div class="rules-grid">
               <div class="rule-card">
-                <h3 class="subsection-title">Voorronde (max 114 ptn)</h3>
+                <h3 class="subsection-title">Voorronde (max TODO 114 ptn)</h3>
                 <ul class="points-list">
                   <li>1 punt als je de juiste winnaar, de verliezer of het gelijkspel voorspelt</li>
                   <li>3 punten indien je de uitslag van de match correct voorspeld hebt</li>
@@ -269,20 +270,23 @@ q {
               </div>
 
               <div class="rule-card">
-                <h3 class="subsection-title">Eindrondes (max 85 ptn)</h3>
+                <h3 class="subsection-title">Eindrondes (max TODO 85 ptn)</h3>
                 <ul class="points-list">
+                  <li>voor de eerste 16 juist voorspelde zestiende finalisten : 1 punt</li>
+                  <li>voor de 17e - 28e juist voorspelde zestiende finalisten : 2 punten</li>
+                  <li>voor de 29e - 32e juist voorspelde zestiende finalisten : 3 punten</li>
                   <li>voor de eerste 8 juist voorspelde achtste finalisten : 1 punt</li>
-                  <li>voor de 9e - 13e juist voorspelde achtste finalist : 2 punten</li>
-                  <li>voor de 14e - 16e juist voorspelde achtste finalist : 3 punten</li>
+                  <li>voor de 9e - 13e juist voorspelde achtste finalisten : 2 punten</li>
+                  <li>voor de 14e - 16e juist voorspelde achtste finalisten : 3 punten</li>
                   <li>voor de eerste 4 juist voorspelde kwartfinalisten : 2 punten</li>
-                  <li>voor de 5e en 6e juist voorspelde kwartfinalist : 3 punten</li>
-                  <li>voor de 7e en 8e juist voorspelde kwartfinalist : 4 punten</li>
+                  <li>voor de 5e en 6e juist voorspelde kwartfinalisten : 3 punten</li>
+                  <li>voor de 7e en 8e juist voorspelde kwartfinalisten : 4 punten</li>
                   <li>voor de eerste 2 juist voorspelde halve finalisten : 4 punten</li>
                   <li>voor de 3e juist voorspelde halve finalist : 5 punten</li>
                   <li>voor de 4e juist voorspelde halve finalist : 6 punten</li>
                   <li>voor de 1e juist voorspelde finalist : 5 punten</li>
                   <li>voor de 2e juist voorspelde finalist : 6 punten</li>
-                  <li>6 punten voor de correct voorspelde winnaar van het EK</li>
+                  <li>6 punten voor de correct voorspelde winnaar van het WK</li>
                 </ul>
               </div>
             </div>
@@ -312,6 +316,25 @@ q {
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <td>Zestiende TODO</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+                <td>2</td>
+                <td>2</td>
+                <td>2</td>
+                <td>2</td>
+                <td>2</td>
+                <td>3</td>
+                <td>3</td>
+                <td>3</td>
+              </tr>
               <tr>
                 <td>Achtste</td>
                 <td>1</td>
