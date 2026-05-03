@@ -248,8 +248,8 @@ q {
               <h3 class="subsection-title">Bonusvraag</h3>
               <p>Waar eindigt België in het WK?<br>Durf wordt beloond! Hoe verder je gokt, hoe meer punten te pakken.</p>
               <ul class="points-list">
-                <li>Voorronde : 2 ptn</li>
-                <li>Zestiende finale : TODO ptn</li>
+                <li>Voorronde : 1 ptn</li>
+                <li>Zestiende finale : 2 ptn</li>
                 <li>Achtste finale : 3 ptn</li>
                 <li>Kwartfinale : 5 ptn</li>
                 <li>Halve finale : 7 ptn</li>

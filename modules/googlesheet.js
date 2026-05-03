@@ -224,6 +224,15 @@ function calculateScoreFinale(id, finalisten, pronoFinalisten) {
     //console.log("Intersection: ", id, finalisten, intersection.length);
     const count = intersection.length;
     switch (id) {
+      case "ZF":
+        if( count <= 16 ) {
+          result = count;
+        } else if (count > 16 && count <= 28) {
+          result = 16 + (count - 16) * 2;
+        } else if (count >28) {
+          result = 16 + (12 * 2) + (count - 28) * 3
+        }
+        break;
       case "AF":
         if( count <= 8 ) {
           result = count;
@@ -266,6 +275,8 @@ function calculateScoreFinale(id, finalisten, pronoFinalisten) {
       case "België":
           if( count == 1 ) {
             if (intersection[0] === "voorrondes" ) {
+              result = 1;
+            } else if (intersection[0] === "ZF" ) {
               result = 2;
             } else if (intersection[0] === "AF" ) {
               result = 3;
@@ -419,6 +430,7 @@ async function getResults() {
     results.push(game);
   }
   
+  results.push(await getFinaleResults('ZF'));
   results.push(await getFinaleResults('AF'));
   results.push(await getFinaleResults('KF'));
   results.push(await getFinaleResults('HF'));
@@ -569,6 +581,7 @@ async function getResultBelgium() {
   let lastMatchBelgium = (matchesBelgium[matchesBelgium.length-1]).id;
 
   const voorrondesRegex = new RegExp('M[0-9]+');
+  const zestiendeRegex = new RegExp('ZF[0-9]+');
   const achtsteRegex = new RegExp('AF[0-9]+');
   const kwartRegex = new RegExp('KF[0-9]+');
   const halveRegex = new RegExp('(HF[0-9]+|F2)');
@@ -576,6 +589,8 @@ async function getResultBelgium() {
 
   if(voorrondesRegex.test(lastMatchBelgium)) {
     result.push('voorrondes');
+  } else if (zestiendeRegex.test(lastMatchBelgium)){
+    result.push('ZF');
   } else if (achtsteRegex.test(lastMatchBelgium)){
     result.push('AF');
   } else if (kwartRegex.test(lastMatchBelgium)){

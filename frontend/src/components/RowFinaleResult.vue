@@ -2,6 +2,7 @@
 import { right } from '@popperjs/core';
 
   const labels = [
+    { id: "ZF", label: "Zestiende finales"},  
     { id: "AF", label: "Achtste finales"},
     { id: "KF", label: "Kwart finales"},
     { id: "HF", label: "Halve finales"},
@@ -32,6 +33,7 @@ import { right } from '@popperjs/core';
 
   function calculateScoreColor(id, score) {
     const maxs = [
+      { id: 'ZF', max: 52},
       { id: 'AF', max: 27},
       { id: 'KF', max: 22},
       { id: 'HF', max: 19},
