@@ -76,7 +76,7 @@ export default {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 1.5rem;
-  color: var(--betza-light);
+  color: var(--betza-light-soft);
 }
 
 .shame-stage {

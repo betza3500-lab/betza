@@ -27,6 +27,15 @@ async function handleLogout() {
         <b-link active-class="active" class="nav-link" to="/grafiek"><svg-icon class="menu-icon" type="mdi" :path="mdiChartLine" :size="30"></svg-icon></b-link>
         <b-link active-class="active" class="nav-link" to="/tussenstand"><svg-icon class="menu-icon" type="mdi" :path="mdiFormatListNumbered" :size="30"></svg-icon></b-link>
       </div>
+      <div class="nav-user-mobile d-sm-none d-flex align-items-center gap-2 pe-2">
+        <ParticipantAvatar v-if="user?.pictureID" :pictureId="user.pictureID" />
+        <img
+          v-else-if="user?.picture"
+          class="google-avatar"
+          :src="user.picture"
+          :alt="user.naam ?? user.name"
+        />
+      </div>
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav>
@@ -36,7 +45,7 @@ async function handleLogout() {
           <b-link active-class="active" class="nav-link" to="/deelnemers"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Deelnemers</span></b-link>
           <b-link active-class="active" class="nav-link" to="/halloffame"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Hall of fame</span></b-link>
           <b-link active-class="active" class="nav-link" to="/hallofshame"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Hall of shame</span></b-link>
-          <div class="nav-user d-flex align-items-center gap-2 px-2 ms-auto">
+          <div class="nav-user d-none d-sm-flex align-items-center gap-2 px-2 ms-auto">
             <ParticipantAvatar v-if="user?.pictureID" :pictureId="user.pictureID" />
             <img
               v-else-if="user?.picture"
@@ -119,6 +128,10 @@ nav a:first-of-type {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 0.5rem;
   margin-top: 0.25rem;
+}
+
+.nav-user-mobile {
+  margin-left: auto;
 }
 
 .google-avatar {
