@@ -250,7 +250,7 @@ app.use(cors({
 const mockUserEmail = process.env.MOCK_USER_EMAIL?.trim().toLowerCase() || '';
 const mockUserPictureId = process.env.MOCK_USER_PICTURE_ID?.trim() || 'DXX';
 const mockAuthEnabled = !isProduction && allowMockAuth && !!mockUserEmail;
-const sessionTtlSeconds = 30 * 24 * 60 * 60;
+const sessionTtlSeconds = 100 * 24 * 60 * 60;
 
 if (allowMockAuth && !mockUserEmail) {
   console.warn('Mock auth was requested, but MOCK_USER_EMAIL is missing. Mock auth is disabled.');
