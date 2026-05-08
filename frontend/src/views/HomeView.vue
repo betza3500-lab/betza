@@ -183,18 +183,14 @@ q {
                 Traditiegetrouw staat het Betza-bestuur weer klaar voor een onvergetelijk toernooi in woelige tijden!
               </p>
             </div>
-            <!--
-                <p><img class="d-inline-flex float-end my-1 ms-4" :style="{ height: '110px', borderRadius: '10px' }"
-                :src="money" />Nu het WK met rasse schreden nadert, kunnen jullie dus van start gaan met het uitwerken van
-              jullie strategie voor het komende WK.</p>
-            <p>Inschrijvingen moeten ten laatste binnen zijn op <strong>woensdag 12 juni</strong>!</p>
-            <p></p>
-
-            <div class="d-grid gap-2 col-12 align-content-start">
-            <b-button class="btn-prono btn-block" target="_blank" href="https://www.wallchart.io/football/euro-cup-2024.html" :size="lg">
-                Website voor pronostiek voorbereiding</b-button>
+            
+          </section>
+          <section class="content-section">
+            <h2 class="section-title">Inschrijven</h2>
+            <div class="intro-block">
+               <b-button class="btn-prono btn-block" target="_blank" href="https://forms.gle/ZA1vYVyG34V4jfZz9" :size="lg">
+                  Pronostiek indienen</b-button>
             </div>
-            -->
           </section>
 
           <section class="content-section">
