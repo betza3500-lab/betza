@@ -260,7 +260,7 @@ q {
 
             <div class="rules-grid">
               <div class="rule-card">
-                <h3 class="subsection-title">Voorronde (max TODO 114 ptn)</h3>
+                <h3 class="subsection-title">Voorrondes (max 222 ptn)</h3>
                 <ul class="points-list">
                   <li>1 punt als je de juiste winnaar, de verliezer of het gelijkspel voorspelt</li>
                   <li>3 punten indien je de uitslag van de match correct voorspeld hebt</li>
@@ -270,7 +270,7 @@ q {
               </div>
 
               <div class="rule-card">
-                <h3 class="subsection-title">Eindrondes (max TODO 85 ptn)</h3>
+                <h3 class="subsection-title">Eindrondes (max 137 ptn)</h3>
                 <ul class="points-list">
                   <li>voor de eerste 16 juist voorspelde zestiende finalisten : 1 punt</li>
                   <li>voor de 17e - 28e juist voorspelde zestiende finalisten : 2 punten</li>
@@ -333,7 +333,7 @@ q {
             </thead>
             <tbody>
               <tr>
-                <td>Zestiende TODO</td>
+                <td>Zestiende</td>
                 <td>1</td>
                 <td>1</td>
                 <td>1</td>
