@@ -194,6 +194,68 @@ The frontend will be available at `http://localhost:5173` and API calls to `/api
 - `npm run build`: Build for production
 - `npm run preview`: Preview production build locally
 
+## Updating Backend and Frontend
+
+Use this workflow whenever you change code and want to update your local app or deployment.
+
+### A. Update Locally (development)
+
+1. Pull the latest changes:
+
+```bash
+git pull
+```
+
+2. Update backend dependencies (root folder):
+
+```bash
+npm install
+```
+
+3. Update frontend dependencies:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+4. Start backend and frontend again:
+
+**Terminal 1 (backend)**
+```bash
+npm start
+```
+
+**Terminal 2 (frontend)**
+```bash
+cd frontend
+npm run dev
+```
+
+### B. Update Production (Render BFF deployment)
+
+When the app is deployed through Render from GitHub:
+
+1. Commit and push your backend and/or frontend changes.
+2. Trigger a new Render deploy (auto-deploy on push, or manual deploy in Render dashboard).
+3. Ensure environment variables are still correct (`SESSION_SECRET`, Google OAuth, Google Sheets credentials).
+4. Verify after deploy:
+   - `/api/auth/session` returns expected auth status
+   - avatar URLs load through `/api/avatar/:pictureId` after login
+   - frontend pages load correctly
+
+### C. Build Frontend for production manually (optional)
+
+If you need to build the frontend artifact yourself:
+
+```bash
+cd frontend
+npm run build
+```
+
+This generates `frontend/dist`.
+
 ## API Endpoints
 
 The backend provides the following REST API endpoints:
