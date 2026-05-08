@@ -48,6 +48,7 @@ import 'dotenv/config';
 import express from 'express';
 import { getIronSession } from 'iron-session';
 import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import crypto from 'crypto';
 import helmet from 'helmet';
@@ -114,6 +115,8 @@ validateStartupConfig();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const participantAvatarDir = path.join(__dirname, 'assets', 'participants');
+const defaultAvatarId = 'DXX';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -364,6 +367,29 @@ function isValidGoogleIdentity(payload) {
   return true;
 }
 
+function getSafeAvatarId(value) {
+  const id = String(value ?? '').trim();
+  if (!id) {
+    return defaultAvatarId;
+  }
+
+  return /^[A-Za-z0-9_-]+$/.test(id) ? id : defaultAvatarId;
+}
+
+function sendAvatarById(res, pictureId) {
+  const safePictureId = getSafeAvatarId(pictureId);
+  const requestedPath = path.join(participantAvatarDir, `${safePictureId}.jpg`);
+  const fallbackPath = path.join(participantAvatarDir, `${defaultAvatarId}.jpg`);
+  const filePath = fs.existsSync(requestedPath) ? requestedPath : fallbackPath;
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Avatar not found.' });
+  }
+
+  res.setHeader('Cache-Control', 'private, max-age=300');
+  return res.sendFile(filePath);
+}
+
 app.use((req, res, next) => {
   res.on('finish', () => {
     const timestamp = new Date().toISOString();
@@ -566,6 +592,10 @@ app.post('/api/auth/logout', async (req, res) => {
 });
 
 app.use('/api', requireAuth);
+
+app.get('/api/avatar/:pictureId', (req, res) => {
+  return sendAvatarById(res, req.params.pictureId);
+});
 
 async function calculatePronos(id) {
   await load();

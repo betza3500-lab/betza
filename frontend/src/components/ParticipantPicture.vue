@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, watchEffect } from 'vue'
+  import { computed } from 'vue'
   
   const props = defineProps({
     pictureId: { type: String, required: false, default: 'DXX' },
@@ -9,9 +9,9 @@
     padding: {type: String, required: false, default: '0px'}
   })
   
-  const picture = ref()
-  watchEffect(async () => {
-    picture.value = (await import( `../assets/participants/small/${props.pictureId}.jpg`)).default
+  const picture = computed(() => {
+    const pictureId = String(props.pictureId ?? '').trim() || 'DXX'
+    return `/api/avatar/${encodeURIComponent(pictureId)}`
   })
 
   </script>
