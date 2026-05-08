@@ -39,6 +39,7 @@ async function handleLogout() {
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav>
+          <b-link active-class="active" class="nav-link" to="/"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Start</span></b-link>
           <b-link active-class="active" class="nav-link" to="/resultaat"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Resultaat</span></b-link>
           <b-link active-class="active" class="nav-link" to="/grafiek"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Grafiek</span></b-link>
           <b-link active-class="active" class="nav-link" to="/tussenstand"><span class="d-flex justify-content-center" data-bs-target="#nav-collapse" data-bs-toggle="collapse">Tussenstand</span></b-link>
