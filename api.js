@@ -403,7 +403,7 @@ async function buildSessionUser(email, fallbackName = null) {
       email,
       name: participant.name || participant.Deelnemer || fallbackName || email,
       pictureID: participant.PictureID || mockUserPictureId,
-      picture: participant.PictureID || null,
+      picture: null,
       participantId: participant.participant_id ?? null,
       role: participant.role ?? 'user',
     };
@@ -417,6 +417,39 @@ async function buildSessionUser(email, fallbackName = null) {
     participantId: null,
     role: 'user',
   };
+}
+
+async function syncSessionUserFromParticipant(req) {
+  const currentUser = req.session?.user;
+  if (!currentUser?.email) {
+    return;
+  }
+
+  const participant = await resolveParticipant(currentUser.email.trim().toLowerCase());
+  if (!participant) {
+    return;
+  }
+
+  const nextUser = {
+    ...currentUser,
+    name: participant.name || participant.Deelnemer || currentUser.name || currentUser.email,
+    pictureID: participant.PictureID || mockUserPictureId,
+    picture: null,
+    participantId: participant.participant_id ?? null,
+    role: participant.role ?? 'user',
+  };
+
+  const changed =
+    currentUser.name !== nextUser.name
+    || currentUser.pictureID !== nextUser.pictureID
+    || currentUser.picture !== nextUser.picture
+    || currentUser.participantId !== nextUser.participantId
+    || currentUser.role !== nextUser.role;
+
+  if (changed) {
+    req.session.user = nextUser;
+    await req.session.save();
+  }
 }
 
 async function ensureMockSession(req, res) {
@@ -483,7 +516,8 @@ app.get('/api/auth/callback', async (req, res) => {
       user: {
         email,
         name: payload.name || participant.name || participant.Deelnemer || email,
-        picture: payload.picture || null,
+        pictureID: participant.PictureID || mockUserPictureId,
+        picture: null,
         participantId: participant.participant_id ?? null,
         role: participant.role ?? 'user',
       },
@@ -496,7 +530,7 @@ app.get('/api/auth/callback', async (req, res) => {
   }
 });
 
-app.get('/api/auth/session', (req, res) => {
+app.get('/api/auth/session', async (req, res) => {
   if (isMockAuthAllowedForRequest(req) && !req.session?.user && !req.session?.mockAuthDisabled) {
     return ensureMockSession(req, res)
       .then(() => res.json({ user: req.session.user }))
@@ -508,6 +542,12 @@ app.get('/api/auth/session', (req, res) => {
 
   if (!req.session?.user) {
     return res.status(401).json({ error: 'Not authenticated.' });
+  }
+
+  try {
+    await syncSessionUserFromParticipant(req);
+  } catch (error) {
+    console.error('Failed to refresh session user mapping.', error);
   }
 
   return res.json({ user: req.session.user });
