@@ -75,18 +75,12 @@ main {
   margin-bottom: 0.75rem;
 }
 
-.rules-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
 .rule-card {
   padding: 1rem;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 15px;
 }
 
 .quote-block {
@@ -244,7 +238,7 @@ q {
             <h2 class="section-title">Puntenverdeling</h2>
             <p>De punten worden zoals gewoonlijk als volgt toegekend:</p>
 
-            <div class="subsection">
+            <div class="rule-card">
               <h3 class="subsection-title">Bonusvraag</h3>
               <p>Waar eindigt België in het WK?<br>Durf wordt beloond! Hoe verder je gokt, hoe meer punten te pakken.</p>
               <ul class="points-list">
@@ -258,7 +252,6 @@ q {
               </ul>
             </div>
 
-            <div class="rules-grid">
               <div class="rule-card">
                 <h3 class="subsection-title">Voorrondes (max 222 ptn)</h3>
                 <ul class="points-list">
@@ -289,7 +282,6 @@ q {
                   <li>6 punten voor de correct voorspelde winnaar van het WK</li>
                 </ul>
               </div>
-            </div>
 
             <div class="table-wrap d-none d-sm-block">
               <h3 class="subsection-title">Overzicht puntenverdeling eindrondes:</h3>
