@@ -187,7 +187,9 @@ q {
           </section>
           <section class="content-section">
             <h2 class="section-title">Inschrijven</h2>
-            <div class="intro-block">
+            <div class="d-flex flex-column">
+              <b-button class="btn-prono btn-block" target="_blank" href="https://www.wallchart.io/football/world-cup-2026.html`" :size="lg">
+                  Pronostiek voorbereiden</b-button>
                <b-button class="btn-prono btn-block" target="_blank" href="https://forms.gle/ZA1vYVyG34V4jfZz9" :size="lg">
                   Pronostiek indienen</b-button>
             </div>
