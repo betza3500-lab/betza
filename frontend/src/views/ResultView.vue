@@ -86,7 +86,7 @@
       <b-th sticky-column class="stickyMatchTitle header" >Match - Uitslag / Deelnemer</b-th>
       
       <template v-for="total in totals">
-        <b-th class="sticky header border-end text-center" style="min-width: 80px;" colspan="2" sticky-column>{{total.deelnemer}}&nbsp;({{total.total}})</b-th>
+        <b-th class="sticky header border-end text-center" style="min-width: 60px;" colspan="2" sticky-column>{{total.deelnemer}}&nbsp;({{total.total}})</b-th>
       </template>
     </b-tr>
     <b-tr>
